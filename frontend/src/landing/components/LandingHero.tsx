@@ -555,30 +555,36 @@ function SessionDot({ zone }: { zone: string }) {
 export function LandingHero() {
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useGSAP(() => {
-		const ctx = gsap.context(() => {
-			const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-			
-			// Initial state
-			gsap.set(".gsap-reveal", { y: 40, opacity: 0 });
-			gsap.set(".gsap-scale", { scale: 0.95, opacity: 0 });
+	useGSAP(
+		() => {
+			const ctx = gsap.context(() => {
+				const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
-			tl.to(".gsap-reveal", {
-				y: 0,
-				opacity: 1,
-				duration: 1.2,
-				stagger: 0.15,
-			})
-			.to(".gsap-scale", {
-				scale: 1,
-				opacity: 1,
-				duration: 1.2,
-				ease: "elastic.out(1, 0.75)"
-			}, "-=0.8");
-		}, containerRef);
+				// Initial state
+				gsap.set(".gsap-reveal", { y: 40, opacity: 0 });
+				gsap.set(".gsap-scale", { scale: 0.95, opacity: 0 });
 
-		return () => ctx.revert();
-	}, { scope: containerRef });
+				tl.to(".gsap-reveal", {
+					y: 0,
+					opacity: 1,
+					duration: 1.2,
+					stagger: 0.15,
+				}).to(
+					".gsap-scale",
+					{
+						scale: 1,
+						opacity: 1,
+						duration: 1.2,
+						ease: "elastic.out(1, 0.75)",
+					},
+					"-=0.8",
+				);
+			}, containerRef);
+
+			return () => ctx.revert();
+		},
+		{ scope: containerRef },
+	);
 
 	return (
 		<section
@@ -629,8 +635,14 @@ export function LandingHero() {
 							<span>Star on GitHub</span>
 							<span className="relative inline-flex items-center">
 								<StarIcon className="gh-star h-4 w-4 text-[color:var(--fg-muted)]" />
-								<span className="gh-sparkle absolute -right-1 -top-1 h-1 w-1 rounded-full bg-[#ffd35c]" style={{ ["--sx" as string]: "7px", ["--sy" as string]: "-7px" }} />
-								<span className="gh-sparkle gh-sparkle-2 absolute -bottom-1 left-0 h-1 w-1 rounded-full bg-[color:var(--accent)]" style={{ ["--sx" as string]: "-6px", ["--sy" as string]: "6px" }} />
+								<span
+									className="gh-sparkle absolute -right-1 -top-1 h-1 w-1 rounded-full bg-[#ffd35c]"
+									style={{ ["--sx" as string]: "7px", ["--sy" as string]: "-7px" }}
+								/>
+								<span
+									className="gh-sparkle gh-sparkle-2 absolute -bottom-1 left-0 h-1 w-1 rounded-full bg-[color:var(--accent)]"
+									style={{ ["--sx" as string]: "-6px", ["--sy" as string]: "6px" }}
+								/>
 							</span>
 							<span className="gh-star-count rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[12px] leading-none text-[color:var(--fg-muted)]">
 								7.7k
@@ -646,7 +658,7 @@ export function LandingHero() {
 					</div>
 					<div className="h-px flex-1 bg-gradient-to-r from-[color:var(--border-strong)] via-[color:var(--border-strong)] to-transparent" />
 				</div>
-				
+
 				<div className="gsap-scale mt-12">
 					<ScaledMockup designWidth={1080}>
 						<HeroDashboardMockup />

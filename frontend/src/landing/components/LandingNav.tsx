@@ -132,16 +132,16 @@ export function LandingNav() {
 	}, []);
 
 	return (
-		<header data-testid="site-nav" ref={navRef} className="pointer-events-auto fixed inset-x-0 top-0 z-40 pt-4 px-4 transition-all duration-500 ease-out flex justify-center [&.nav-scrolled]:pt-2">
-			<div 
+		<header
+			data-testid="site-nav"
+			ref={navRef}
+			className="pointer-events-auto fixed inset-x-0 top-0 z-40 pt-4 px-4 transition-all duration-500 ease-out flex justify-center [&.nav-scrolled]:pt-2"
+		>
+			<div
 				ref={innerRef}
 				className="w-full max-w-6xl mx-auto flex h-14 items-center justify-between gap-6 rounded-full border border-[color:var(--border)] bg-[color:var(--bg)]/70 px-6 backdrop-blur-xl shadow-lg transition-all duration-500 ease-out [.nav-scrolled_&]:h-12 [.nav-scrolled_&]:max-w-4xl [.nav-scrolled_&]:bg-[color:var(--bg)]/90"
 			>
-				<a
-					href="/"
-					data-testid="nav-logo"
-					className="group inline-flex h-10 shrink-0 items-center gap-3"
-				>
+				<a href="/" data-testid="nav-logo" className="group inline-flex h-10 shrink-0 items-center gap-3">
 					<img
 						src="/ao-logo.svg"
 						alt="Agent Orchestrator"
@@ -152,10 +152,7 @@ export function LandingNav() {
 					</span>
 				</a>
 
-				<nav
-					className="hidden items-center gap-8 md:flex"
-					aria-label="Primary"
-				>
+				<nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
 					{navLinks.map((item) => (
 						<a
 							key={item.label}

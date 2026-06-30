@@ -130,7 +130,11 @@ body::-webkit-scrollbar,
 	min-height: 100vh;
 	background: var(--bg);
 	color: var(--fg);
-	font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
+	font-family:
+		var(--font-inter),
+		-apple-system,
+		system-ui,
+		sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -979,4 +983,3 @@ body::-webkit-scrollbar,
 	transform-box: fill-box;
 	animation: landing-graph-pulse 1.5s ease-out infinite;
 }
-

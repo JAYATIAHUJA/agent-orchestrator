@@ -210,43 +210,46 @@ export function LandingFeatures() {
 		[feedbackId],
 	);
 
-	useGSAP(() => {
-		// Desktop: pin the section so the viewport locks onto it, then advance
-		// through the four features (text + mockup crossfade) as you scroll, with a
-		// snap to each one. The pin owns a defined scroll region, so the layout and
-		// every trigger below stays stable. Mobile renders the features stacked.
-		const mm = gsap.matchMedia();
+	useGSAP(
+		() => {
+			// Desktop: pin the section so the viewport locks onto it, then advance
+			// through the four features (text + mockup crossfade) as you scroll, with a
+			// snap to each one. The pin owns a defined scroll region, so the layout and
+			// every trigger below stays stable. Mobile renders the features stacked.
+			const mm = gsap.matchMedia();
 
-		mm.add("(min-width: 1024px)", () => {
-			const st = ScrollTrigger.create({
-				trigger: pinRef.current,
-				pin: true,
-				start: "top top",
-				// Short, snappy travel between features (~0.6 viewport each) instead
-				// of a full screen of scrolling per switch.
-				end: () => "+=" + window.innerHeight * 1.8,
-				anticipatePin: 1,
-				invalidateOnRefresh: true,
-				snap: {
-					snapTo: [0, 1 / 3, 2 / 3, 1],
-					duration: { min: 0.25, max: 0.5 },
-					delay: 0.05,
-					ease: "power2.inOut",
-				},
-				onUpdate: (self) => {
-					const idx = Math.min(3, Math.round(self.progress * 3));
-					if (idx !== activeRef.current) {
-						activeRef.current = idx;
-						setActive(idx);
-					}
-				},
+			mm.add("(min-width: 1024px)", () => {
+				const st = ScrollTrigger.create({
+					trigger: pinRef.current,
+					pin: true,
+					start: "top top",
+					// Short, snappy travel between features (~0.6 viewport each) instead
+					// of a full screen of scrolling per switch.
+					end: () => "+=" + window.innerHeight * 1.8,
+					anticipatePin: 1,
+					invalidateOnRefresh: true,
+					snap: {
+						snapTo: [0, 1 / 3, 2 / 3, 1],
+						duration: { min: 0.25, max: 0.5 },
+						delay: 0.05,
+						ease: "power2.inOut",
+					},
+					onUpdate: (self) => {
+						const idx = Math.min(3, Math.round(self.progress * 3));
+						if (idx !== activeRef.current) {
+							activeRef.current = idx;
+							setActive(idx);
+						}
+					},
+				});
+
+				return () => st.kill();
 			});
 
-			return () => st.kill();
-		});
-
-		return () => mm.revert();
-	}, { scope: containerRef });
+			return () => mm.revert();
+		},
+		{ scope: containerRef },
+	);
 
 	// Fluid swap between features: outgoing fades out while the incoming text
 	// rises line-by-line and the mockup settles in with a soft scale. Runs on
@@ -337,8 +340,8 @@ export function LandingFeatures() {
 					</div>
 					<div className="lg:col-span-5">
 						<p className="landing-body-compact">
-							Your agents stay native terminal tools. AO standardizes launch, restore, hooks, and PR ownership through one
-							adapter contract.
+							Your agents stay native terminal tools. AO standardizes launch, restore, hooks, and PR ownership through
+							one adapter contract.
 						</p>
 					</div>
 				</div>
@@ -418,9 +421,10 @@ function FeatureNarrative({ worker, orchestrator }: { worker: AgentHarness; orch
 			meta="23 harnesses"
 		>
 			<p>
-				Run <FeatureStrong>{worker.name}</FeatureStrong>, <FeatureStrong>{orchestrator.name}</FeatureStrong>, Cursor,
-				or Aider unchanged. AO standardizes the workflow around them — <FeatureStrong>restore, prompts, hooks, and
-				ownership</FeatureStrong> — so you can pick one agent to write and another to supervise.
+				Run <FeatureStrong>{worker.name}</FeatureStrong>, <FeatureStrong>{orchestrator.name}</FeatureStrong>, Cursor, or
+				Aider unchanged. AO standardizes the workflow around them —{" "}
+				<FeatureStrong>restore, prompts, hooks, and ownership</FeatureStrong> — so you can pick one agent to write and
+				another to supervise.
 			</p>
 		</FeatureCopy>
 	);

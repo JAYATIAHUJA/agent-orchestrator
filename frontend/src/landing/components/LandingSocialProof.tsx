@@ -125,33 +125,36 @@ function VerifiedIcon({ className = "" }: { className?: string }) {
 export function LandingSocialProof() {
 	const containerRef = useRef<HTMLElement>(null);
 
-	useGSAP(() => {
-		const cards = gsap.utils.toArray<HTMLElement>(".gsap-tweet-card");
+	useGSAP(
+		() => {
+			const cards = gsap.utils.toArray<HTMLElement>(".gsap-tweet-card");
 
-		gsap.set(cards, { opacity: 0, y: 30 });
+			gsap.set(cards, { opacity: 0, y: 30 });
 
-		// Reveal each card as it enters the viewport. On mobile the masonry is a
-		// single tall column, so a single section-top trigger left the lower cards
-		// invisible until far past the heading; batching reveals them in step with
-		// the scroll on every layout.
-		const batch = ScrollTrigger.batch(cards, {
-			start: "top 90%",
-			once: true,
-			onEnter: (els: Element[]) => {
-				gsap.to(els, {
-					opacity: 1,
-					y: 0,
-					duration: 0.7,
-					stagger: 0.08,
-					ease: "power3.out",
-				});
-			},
-		});
+			// Reveal each card as it enters the viewport. On mobile the masonry is a
+			// single tall column, so a single section-top trigger left the lower cards
+			// invisible until far past the heading; batching reveals them in step with
+			// the scroll on every layout.
+			const batch = ScrollTrigger.batch(cards, {
+				start: "top 90%",
+				once: true,
+				onEnter: (els: Element[]) => {
+					gsap.to(els, {
+						opacity: 1,
+						y: 0,
+						duration: 0.7,
+						stagger: 0.08,
+						ease: "power3.out",
+					});
+				},
+			});
 
-		ScrollTrigger.refresh();
+			ScrollTrigger.refresh();
 
-		return () => batch.forEach((t) => t.kill());
-	}, { scope: containerRef });
+			return () => batch.forEach((t) => t.kill());
+		},
+		{ scope: containerRef },
+	);
 
 	return (
 		<section
@@ -249,9 +252,7 @@ function TweetCard({ post, index }: { post: Post; index: number }) {
 									<span className="truncate text-[14px] font-semibold leading-tight text-[color:var(--fg)]">
 										{post.author}
 									</span>
-									{post.verified ? (
-										<VerifiedIcon className="h-3.5 w-3.5 shrink-0 text-[color:var(--accent)]" />
-									) : null}
+									{post.verified ? <VerifiedIcon className="h-3.5 w-3.5 shrink-0 text-[color:var(--accent)]" /> : null}
 								</div>
 								<span className="truncate text-[12px] leading-tight text-[color:var(--fg-dim)]">@{post.handle}</span>
 							</div>
