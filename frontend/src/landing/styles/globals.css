@@ -155,6 +155,15 @@ body::-webkit-scrollbar,
 	opacity: 0.9;
 }
 
+.landing-nav-link {
+	color: var(--fg);
+	transition: color 180ms ease-out;
+}
+
+.landing-nav-link:hover {
+	color: var(--accent);
+}
+
 .landing-card {
 	background: var(--landing-card-bg);
 	border: 1px solid var(--landing-border-subtle);

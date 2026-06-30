@@ -157,10 +157,9 @@ export function LandingNav() {
 						<a
 							key={item.label}
 							href={item.href}
-							className="group/navlink relative text-[13px] font-medium tracking-wide text-[color:var(--fg-muted)] transition-colors duration-200 hover:text-[color:var(--fg)]"
+							className="landing-nav-link px-1.5 py-1.5 text-[13px] font-medium tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--accent)]"
 						>
 							{item.label}
-							<span className="absolute -bottom-1.5 left-0 h-px w-full origin-left scale-x-0 bg-[color:var(--accent)] transition-transform duration-300 ease-out group-hover/navlink:scale-x-100" />
 						</a>
 					))}
 				</nav>
