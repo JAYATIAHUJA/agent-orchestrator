@@ -31,40 +31,47 @@ export function LandingAgentsBar() {
 		<section
 			id="agents"
 			data-testid="agents-marquee"
-			className="landing-reveal relative overflow-hidden border-y border-[color:var(--border)] bg-[color:var(--bg)]"
+			className="landing-reveal relative overflow-hidden border-y border-white/[0.04] bg-[color:var(--bg)]"
 		>
-			<div className="container-page pt-12 pb-10">
-				<div className="mx-auto flex max-w-[1120px] flex-wrap items-baseline justify-between gap-8">
-					<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-						<span className="landing-eyebrow">Coverage</span>
-						<h2 className="text-[24px] font-semibold leading-tight text-[color:var(--fg)] sm:text-[32px]">
-							One Daemon. <span className="text-[color:var(--fg-muted)]">23 Agent Harnesses.</span>
-						</h2>
+			<div className="container-page pt-14 pb-10">
+				<div className="mx-auto max-w-[1180px]">
+					<div className="flex flex-wrap items-end justify-between gap-6">
+						<div>
+							<span className="landing-eyebrow">Coverage</span>
+							<h2 className="mt-4 max-w-[720px] text-[28px] font-semibold leading-[1.1] text-[color:var(--fg)] sm:text-[40px]">
+								Use the agent you already trust.
+								<span className="block text-[color:var(--fg-muted)]">AO keeps the workflow the same.</span>
+							</h2>
+						</div>
 					</div>
-					<p className="max-w-[54ch] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">
-						Swap harnesses per project. The daemon does not care which CLI is in the pane - adapters obey one port.
-					</p>
-				</div>
-			</div>
 
-			<div className="container-page pb-12">
-				<div className="relative mx-auto max-w-3xl overflow-hidden">
-					<div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[color:var(--bg)] to-transparent" />
-					<div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[color:var(--bg)] to-transparent" />
-					<div className="agents-marquee-track flex w-max items-end gap-4">
-						{marqueeAgents.map((agent, index) => (
-							<div
-								key={`${agent.id}-${index}`}
-								className="group flex h-[82px] w-[112px] shrink-0 flex-col items-center justify-end gap-2 px-2 py-2"
-							>
-								<div className="agent-logo-tile">
-									<img src={agent.src} alt="" referrerPolicy="no-referrer" className="agent-logo-image" />
+					<div className="relative mt-12 overflow-hidden">
+						<div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[color:var(--bg)] to-transparent" />
+						<div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[color:var(--bg)] to-transparent" />
+						<div className="agents-marquee-track flex w-max items-center gap-3">
+							{marqueeAgents.map((agent, index) => (
+								<div
+									key={`${agent.id}-${index}`}
+									className="agent-logo-pill group flex h-14 shrink-0 items-center gap-3 px-4"
+								>
+									<div className="agent-logo-pill-icon">
+										<img
+											src={agent.src}
+											alt=""
+											referrerPolicy="no-referrer"
+											className={`agent-logo-image ${agent.id === "kilocode" ? "agent-logo-image-kilocode" : ""}`}
+										/>
+									</div>
+									<div className="font-mono text-[12px] leading-none text-[color:var(--fg-dim)]">{agent.name}</div>
 								</div>
-								<div className="max-w-full truncate font-mono text-[12px] leading-none tracking-[0.04em] text-[color:var(--fg-dim)]">
-									{agent.name}
-								</div>
-							</div>
-						))}
+							))}
+						</div>
+					</div>
+
+					<div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 font-mono text-[11px] uppercase text-[color:var(--fg-dim)]">
+						<span>23 harnesses</span>
+						<span>one daemon</span>
+						<span>per-project agent choice</span>
 					</div>
 				</div>
 			</div>

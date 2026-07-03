@@ -329,25 +329,7 @@ export function LandingFeatures() {
 
 	return (
 		<section ref={containerRef} id="features" data-testid="features-grid" className="relative">
-			<div className="container-page pt-[clamp(80px,12vw,160px)]">
-				<div className="landing-section-header grid items-end gap-8 lg:grid-cols-12">
-					<div className="lg:col-span-7">
-						<div className="landing-eyebrow mb-4">What&apos;s inside</div>
-						<h2 className="landing-heading">
-							Run the agent you already use.
-							<span className="landing-heading-muted block">AO wraps the workflow around it.</span>
-						</h2>
-					</div>
-					<div className="lg:col-span-5">
-						<p className="landing-body-compact">
-							Your agents stay native terminal tools. AO standardizes launch, restore, hooks, and PR ownership through
-							one adapter contract.
-						</p>
-					</div>
-				</div>
-			</div>
-
-			{/* Desktop: pinned, snapping viewport — text + mockup crossfade per feature. */}
+			{/* Desktop: pinned, snapping viewport - text + mockup crossfade per feature. */}
 			<div ref={pinRef} className="relative hidden h-screen items-center overflow-hidden lg:flex">
 				<div className="container-page w-full">
 					<div className="flex items-center gap-16 xl:gap-24">
@@ -422,8 +404,8 @@ function FeatureNarrative({ worker, orchestrator }: { worker: AgentHarness; orch
 		>
 			<p>
 				Run <FeatureStrong>{worker.name}</FeatureStrong>, <FeatureStrong>{orchestrator.name}</FeatureStrong>, Cursor, or
-				Aider unchanged. AO standardizes the workflow around them —{" "}
-				<FeatureStrong>restore, prompts, hooks, and ownership</FeatureStrong> — so you can pick one agent to write and
+				Aider unchanged. AO standardizes the workflow around them -{" "}
+				<FeatureStrong>restore, prompts, hooks, and ownership</FeatureStrong> - so you can pick one agent to write and
 				another to supervise.
 			</p>
 		</FeatureCopy>
@@ -449,8 +431,8 @@ function AgentHarnessDemo({
 	const visibleAgents = primaryAgents.filter((agent) => ["claude-code", "codex", "cursor", "goose"].includes(agent.id));
 
 	return (
-		<article className="surface relative max-h-[500px] overflow-hidden p-0">
-			<div className="landing-card-header flex items-center justify-between px-5 py-4">
+		<article className="surface relative h-[520px] w-full overflow-hidden p-0">
+			<div className="landing-card-header flex items-center justify-between px-5 py-3.5">
 				<div className="flex items-center gap-3">
 					<img src="/ao-logo-transparent.png" alt="" className="h-7 w-7 object-contain" />
 					<div>
@@ -458,22 +440,22 @@ function AgentHarnessDemo({
 						<div className="font-mono text-[11px] text-[color:var(--fg-dim)]">/repo/agent-orchestrator</div>
 					</div>
 				</div>
-				<div className="hidden rounded-full border border-[color:var(--border)] bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--fg-dim)] sm:block">
-					adapter contract
+				<div className="hidden rounded-full border border-[color:var(--border)] bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-dim)] sm:block">
+					adapter
 				</div>
 			</div>
 
-			<div className="grid gap-0 lg:grid-cols-[0.72fr_1fr]">
-				<div className="border-b border-[color:var(--border)] p-4 lg:border-b-0 lg:border-r">
-					<div className="mb-4 grid gap-3 sm:grid-cols-2">
+			<div className="grid h-[calc(520px-69px)] gap-0 lg:grid-cols-[0.68fr_1fr]">
+				<div className="flex min-h-0 flex-col border-b border-[color:var(--border)] p-4 lg:border-b-0 lg:border-r">
+					<div className="mb-3 grid gap-2 sm:grid-cols-2">
 						<AgentSelectLabel
-							label="Worker agent"
+							label="Worker"
 							agent={worker}
 							active={targetSlot === "worker"}
 							onClick={() => setTargetSlot("worker")}
 						/>
 						<AgentSelectLabel
-							label="Orchestrator agent"
+							label="Orchestrator"
 							agent={orchestrator}
 							active={targetSlot === "orchestrator"}
 							onClick={() => setTargetSlot("orchestrator")}
@@ -493,7 +475,7 @@ function AgentHarnessDemo({
 									setTargetSlot("orchestrator");
 									onOrchestratorChange(agent.id);
 								}}
-								className={`group relative flex min-h-[70px] cursor-pointer flex-col items-start justify-between overflow-hidden rounded-md border p-3 text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.045] ${
+								className={`group relative flex min-h-[64px] cursor-pointer flex-col items-start justify-between overflow-hidden rounded-md border p-2.5 text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.045] ${
 									workerId === agent.id
 										? "border-white/18 bg-white/[0.055]"
 										: "border-[color:var(--border)] bg-white/[0.025]"
@@ -501,33 +483,33 @@ function AgentHarnessDemo({
 								aria-pressed={workerId === agent.id}
 							>
 								<div className="flex w-full items-center justify-between gap-2">
-									<AgentLogo agent={agent} className="h-6 w-6" />
+									<AgentLogo agent={agent} className="h-5 w-5" />
 									<span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">
 										{agent.restore.includes("fresh") ? "new" : "resume"}
 									</span>
 								</div>
 								<div>
-									<div className="text-[13px] font-semibold leading-tight text-[color:var(--fg)]">{agent.name}</div>
+									<div className="text-[12px] font-semibold leading-tight text-[color:var(--fg)]">{agent.name}</div>
 									<div className="mt-0.5 font-mono text-[10px] text-[color:var(--fg-dim)]">{agent.org}</div>
 								</div>
 							</button>
 						))}
 					</div>
 
-					<div className="mt-3 text-[12px] leading-relaxed text-[color:var(--fg-dim)]">
-						Click sets the worker. Double-click promotes.
+					<div className="mt-auto pt-3 text-[12px] leading-relaxed text-[color:var(--fg-dim)]">
+						Click sets worker. Double-click promotes.
 					</div>
 				</div>
 
-				<div className="p-4">
-					<div className="mb-4 flex items-center justify-between gap-3">
+				<div className="flex min-h-0 flex-col p-4">
+					<div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
 						<div>
-							<div className="text-lg font-semibold tracking-[-0.02em] text-[color:var(--fg)]">Launch preview</div>
+							<div className="text-[18px] font-semibold leading-tight text-[color:var(--fg)]">Launch preview</div>
 							<div className="font-mono text-[11px] text-[color:var(--fg-dim)]">
 								same daemon route, different native CLI
 							</div>
 						</div>
-						<div className="rounded-md border border-[color:var(--border)] bg-white/[0.025] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">
+						<div className="rounded-md border border-[color:var(--border)] bg-white/[0.025] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--fg-dim)]">
 							ready
 						</div>
 					</div>
@@ -549,6 +531,9 @@ function AgentHarnessDemo({
 							<TerminalPrompt />
 						</div>
 					</div>
+					<div className="mt-auto border-t border-[color:var(--border)] pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">
+						selected route stays local
+					</div>
 				</div>
 			</div>
 		</article>
@@ -568,15 +553,15 @@ function AgentSelectLabel({
 }) {
 	return (
 		<button type="button" onClick={onClick} className="block w-full cursor-pointer text-left">
-			<div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--fg-dim)]">{label}</div>
+			<div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">{label}</div>
 			<div
-				className={`flex items-center gap-2 rounded-md border px-3 py-2 transition duration-200 ${
+				className={`flex items-center gap-2 rounded-md border px-2.5 py-2 transition duration-200 ${
 					active ? "border-white/18 bg-white/[0.055]" : "border-[color:var(--border)] bg-white/[0.035]"
 				}`}
 			>
-				<AgentLogo agent={agent} className="h-6 w-6" />
+				<AgentLogo agent={agent} className="h-5 w-5" />
 				<div className="min-w-0">
-					<div className="truncate text-[13px] font-semibold text-[color:var(--fg)]">{agent.name}</div>
+					<div className="truncate text-[12px] font-semibold text-[color:var(--fg)]">{agent.name}</div>
 					<div className="truncate font-mono text-[10px] text-[color:var(--fg-dim)]">{agent.id}</div>
 				</div>
 			</div>
@@ -628,7 +613,7 @@ function TerminalLine({
 	);
 }
 
-/* Idle prompt with a blinking cursor — keeps the terminals feeling live. */
+/* Idle prompt with a blinking cursor - keeps the terminals feeling live. */
 function TerminalPrompt() {
 	return (
 		<div className="flex items-center text-[color:var(--fg-dim)]">
@@ -650,10 +635,10 @@ function WorkspaceIsolationDemo({
 	const [actionState, setActionState] = useState("session attached");
 
 	return (
-		<article className="surface relative max-h-[500px] overflow-hidden p-0">
-			<div className="grid h-full min-h-[500px] grid-cols-[220px_1fr]">
+		<article className="surface relative h-[520px] w-full overflow-hidden p-0">
+			<div className="grid h-full min-h-[500px] grid-cols-[210px_1fr]">
 				<aside className="flex min-h-0 flex-col border-r border-[color:var(--border)] bg-[color:var(--bg-card)]">
-					<div className="landing-card-header flex items-center justify-between px-4 py-4">
+					<div className="landing-card-header flex items-center justify-between px-4 py-3.5">
 						<div className="flex min-w-0 items-center gap-2.5">
 							<img src="/ao-logo-transparent.png" alt="" className="h-6 w-6 object-contain" />
 							<div className="truncate text-[13px] font-semibold text-[color:var(--fg)]">Agent Orchestrator</div>
@@ -709,12 +694,12 @@ function WorkspaceIsolationDemo({
 				</aside>
 
 				<div className="min-w-0">
-					<div className="landing-card-header flex items-center justify-between px-5 py-4">
+					<div className="landing-card-header grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5">
 						<div className="min-w-0">
 							<div className="flex items-center gap-3">
-								<h4 className="text-xl font-semibold tracking-[-0.03em] text-[color:var(--fg)]">Session</h4>
+								<h4 className="text-[18px] font-semibold leading-tight text-[color:var(--fg)]">Session</h4>
 								<span
-									className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em]"
+									className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em]"
 									style={{ color: workspace.color, background: `${workspace.color}1a` }}
 								>
 									{workspace.status}
@@ -724,18 +709,18 @@ function WorkspaceIsolationDemo({
 								{workspace.agent} {"->"} {workspace.branch}
 							</div>
 						</div>
-						<div className="flex gap-2">
+						<div className="flex shrink-0 gap-2">
 							<button
 								type="button"
 								onClick={() => setActionState(`${workspace.id} restored`)}
-								className="cursor-pointer rounded-md border border-[color:var(--border)] bg-white/[0.03] px-3 py-2 text-[12px] font-medium text-[color:var(--fg-muted)] transition hover:border-white/20 hover:bg-white/[0.06]"
+								className="h-9 cursor-pointer rounded-md border border-[color:var(--border)] bg-white/[0.03] px-2.5 text-[12px] font-medium text-[color:var(--fg-muted)] transition hover:border-white/20 hover:bg-white/[0.06]"
 							>
 								Restore
 							</button>
 							<button
 								type="button"
 								onClick={() => setActionState(`PR opened for ${workspace.branch}`)}
-								className="cursor-pointer rounded-md bg-[color:var(--accent)] px-3 py-2 text-[12px] font-semibold text-[#061126] transition hover:brightness-110"
+								className="h-9 cursor-pointer rounded-md bg-[color:var(--accent)] px-3 text-[12px] font-semibold text-[#061126] transition hover:brightness-110"
 							>
 								Open PR
 							</button>
@@ -754,7 +739,7 @@ function WorkspaceIsolationDemo({
 								</div>
 							</div>
 
-							<div className="flex-1 bg-[#020203] p-4">
+							<div className="flex-1 bg-[#020203] p-3.5">
 								<div className="h-full overflow-hidden rounded-md border border-[color:var(--border)] bg-black">
 									<div className="flex items-center gap-1.5 border-b border-[color:var(--border)] px-3 py-2">
 										<span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
@@ -793,7 +778,7 @@ function WorkspaceNarrative({ workspace }: { workspace: (typeof workspaceSession
 			meta={workspace.id}
 		>
 			<p>
-				Each session runs in its own <FeatureStrong>git worktree</FeatureStrong> — separate branch, terminal, and diff.
+				Each session runs in its own <FeatureStrong>git worktree</FeatureStrong> - separate branch, terminal, and diff.
 				One agent can fail CI while another keeps shipping, and cleanup is just removing the worktree.
 			</p>
 		</FeatureCopy>
@@ -819,7 +804,7 @@ function FeedbackNarrative({ feedback }: { feedback: (typeof feedbackSessions)[n
 		>
 			<p>
 				AO watches <FeatureStrong>CI, reviews, and PR state</FeatureStrong>, then routes each result to the session that
-				owns the branch — so the agent gets actionable context, not a vague “CI failed” ping you have to trace yourself.
+				owns the branch - so the agent gets actionable context, not a vague “CI failed” ping you have to trace yourself.
 			</p>
 		</FeatureCopy>
 	);
@@ -837,7 +822,7 @@ function FeedbackRoutingDemo({
 	const [sentSession, setSentSession] = useState<string | null>(null);
 
 	return (
-		<article className="surface relative max-h-[500px] overflow-hidden p-0">
+		<article className="surface relative h-[520px] w-full overflow-hidden p-0">
 			<div className="landing-card-header flex items-center justify-between px-5 py-4">
 				<div>
 					<div className="text-sm font-semibold text-[color:var(--fg)]">Pull requests</div>
@@ -850,8 +835,8 @@ function FeedbackRoutingDemo({
 				</div>
 			</div>
 
-			<div className="grid min-h-[424px] grid-cols-[280px_1fr]">
-				<aside className="border-r border-[color:var(--border)] bg-[color:var(--bg-card)] p-4">
+			<div className="grid h-[calc(520px-77px)] grid-cols-[280px_1fr]">
+				<aside className="flex min-h-0 flex-col border-r border-[color:var(--border)] bg-[color:var(--bg-card)] p-4">
 					<div className="mb-3 font-mono text-[10px] uppercase tracking-[0.22em] text-[color:var(--fg-dim)]">
 						Open PRs
 					</div>
@@ -888,14 +873,17 @@ function FeedbackRoutingDemo({
 							</button>
 						))}
 					</div>
+					<div className="mt-auto pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">
+						owner matched
+					</div>
 				</aside>
 
-				<div className="min-w-0 p-5">
-					<div className="mb-5 flex items-start justify-between gap-4">
-						<div className="min-w-0">
+				<div className="flex min-h-0 flex-col p-5">
+					<div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+						<div className="min-w-0 pr-2">
 							<div className="flex items-center gap-3">
 								<span className="font-mono text-[12px] text-[color:var(--fg-dim)]">{feedback.number}</span>
-								<h4 className="truncate text-xl font-semibold tracking-[-0.03em] text-[color:var(--fg)]">
+								<h4 className="truncate text-[18px] font-semibold leading-tight text-[color:var(--fg)]">
 									{feedback.title}
 								</h4>
 							</div>
@@ -906,9 +894,9 @@ function FeedbackRoutingDemo({
 						<button
 							type="button"
 							onClick={() => setSentSession(feedback.session)}
-							className="cursor-pointer rounded-md bg-[color:var(--accent)] px-3 py-2 text-[12px] font-semibold text-[#061126] transition hover:brightness-110"
+							className="h-9 min-w-[68px] cursor-pointer rounded-md bg-[color:var(--accent)] px-3 text-[12px] font-semibold text-[#061126] transition hover:brightness-110"
 						>
-							{sentSession === feedback.session ? "Sent" : "Send to agent"}
+							{sentSession === feedback.session ? "Sent" : "Send"}
 						</button>
 					</div>
 
@@ -939,6 +927,9 @@ function FeedbackRoutingDemo({
 							</div>
 						</div>
 					</div>
+					<div className="mt-auto border-t border-[color:var(--border)] pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--fg-dim)]">
+						feedback routes to session {feedback.session}
+					</div>
 				</div>
 			</div>
 		</article>
@@ -947,7 +938,7 @@ function FeedbackRoutingDemo({
 
 function DaemonControlDemo() {
 	return (
-		<article className="surface relative max-h-[500px] overflow-hidden p-0">
+		<article className="surface relative h-[520px] w-full overflow-hidden p-0">
 			<div className="landing-card-header flex items-center justify-between px-5 py-4">
 				<div>
 					<div className="text-sm font-semibold text-[color:var(--fg)]">Local control plane</div>
@@ -1028,7 +1019,7 @@ function DaemonNarrative() {
 		>
 			<p>
 				The desktop app and <FeatureStrong>ao</FeatureStrong> CLI are clients of one local daemon that owns{" "}
-				<FeatureStrong>sessions, worktrees, and live events</FeatureStrong>. Start in the terminal, inspect in the app —
+				<FeatureStrong>sessions, worktrees, and live events</FeatureStrong>. Start in the terminal, inspect in the app -
 				same control plane.
 			</p>
 		</FeatureCopy>

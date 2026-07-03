@@ -580,6 +580,7 @@ export function LandingHero() {
 		async function loadGitHubStars() {
 			try {
 				const response = await fetch(GITHUB_REPO_API_URL, {
+					cache: "no-store",
 					headers: {
 						Accept: "application/vnd.github+json",
 					},
@@ -599,9 +600,11 @@ export function LandingHero() {
 		}
 
 		void loadGitHubStars();
+		const intervalId = window.setInterval(loadGitHubStars, 5 * 60 * 1000);
 
 		return () => {
 			cancelled = true;
+			window.clearInterval(intervalId);
 		};
 	}, []);
 
@@ -655,7 +658,7 @@ export function LandingHero() {
 			/>
 			<div className="relative z-10 mx-auto w-full max-w-[1200px] px-5 sm:px-8 lg:px-12 xl:px-16">
 				<div className="mx-auto text-center">
-					<h1 data-testid="hero-headline" className="gsap-reveal landing-hero-heading mx-auto font-sans">
+					<h1 data-testid="hero-headline" className="gsap-reveal landing-hero-heading mx-auto">
 						<span className="landing-hero-heading-setup block">Stop babysitting agents.</span>
 						<span className="landing-hero-heading-action block">
 							Start merging <span className="landing-hero-heading-accent">real work.</span>
@@ -664,8 +667,7 @@ export function LandingHero() {
 					<div className="gsap-reveal mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center">
 						<a
 							href="/docs/installation"
-							className="hero-pressable group inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] border border-transparent bg-[color:var(--accent)] px-6 text-[15px] font-semibold shadow-[0_12px_32px_-18px_var(--accent-glow)] hover:brightness-[1.07] hover:shadow-[0_18px_44px_-16px_var(--accent-glow)] sm:w-auto"
-							style={{ color: "#11140c" }}
+							className="hero-pressable group inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] border border-white/12 bg-[#23221d] px-6 text-[15px] font-semibold text-[#f4f1e8] shadow-[0_10px_28px_-24px_rgba(255,255,255,0.22)] hover:border-white/18 hover:bg-[#2c2a23] hover:text-white sm:w-auto"
 						>
 							<DownloadIcon className="h-4 w-4" />
 							Install Agent Orchestrator
