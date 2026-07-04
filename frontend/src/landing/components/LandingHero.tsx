@@ -504,11 +504,7 @@ function HeroDashboardMockup() {
 															key={card.title}
 															type="button"
 															onClick={() => setActiveCard(card.title)}
-															className={`w-full rounded-[7px] border bg-[#1a1812] text-left transition-colors hover:border-[rgba(255,255,255,0.10)] ${
-																activeCard === card.title
-																	? "border-[rgba(77,141,255,0.48)]"
-																	: "border-[rgba(255,255,255,0.06)]"
-															}`}
+															className="w-full rounded-[7px] border border-[rgba(255,255,255,0.06)] bg-[#1a1812] text-left transition-colors hover:border-[rgba(255,255,255,0.10)]"
 														>
 															<div className="flex items-center gap-2 px-[13px] pb-[9px] pt-3">
 																<span
