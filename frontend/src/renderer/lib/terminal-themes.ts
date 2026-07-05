@@ -9,13 +9,13 @@ export function buildTerminalThemes(): { dark: ITheme; light: ITheme } {
 	};
 
 	const dark: ITheme = {
-		background: "#15171b",
+		background: "#15181D",
 		foreground: "#d7d7d2",
 		cursor: accent.cursor,
-		cursorAccent: "#15171b",
+		cursorAccent: "#15181D",
 		selectionBackground: accent.selDark,
 		selectionInactiveBackground: "rgba(128, 128, 128, 0.2)",
-		black: "#15171b",
+		black: "#15181D",
 		red: "#ef6b6b",
 		green: "#74b98a",
 		yellow: "#e8c14a",

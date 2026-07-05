@@ -1,0 +1,7 @@
+./cmd.go
+./cmd_windows.go
+./pty.go
+./pty_windows.go
+./ssh.go
+./ssh_other.go
+./winsize_other.go

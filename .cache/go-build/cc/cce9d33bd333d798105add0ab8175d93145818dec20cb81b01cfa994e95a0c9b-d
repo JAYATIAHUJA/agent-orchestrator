@@ -1,0 +1,13 @@
+./changelog.sql.go
+./db.go
+./models.go
+./notifications.sql.go
+./pr.sql.go
+./pr_checks.sql.go
+./pr_comment.sql.go
+./pr_review_threads.sql.go
+./projects.sql.go
+./review.sql.go
+./sessions.sql.go
+./telemetry.sql.go
+./workspace.sql.go

@@ -1,0 +1,14 @@
+./activity.go
+./agentconfig.go
+./doc.go
+./harness.go
+./notification.go
+./pr.go
+./project.go
+./projectconfig.go
+./review.go
+./reviewerharness.go
+./session.go
+./status.go
+./text.go
+./tracker.go

@@ -205,8 +205,8 @@ export function Sidebar({
 				</div>
 			</SidebarHeader>
 
-			<SidebarContent className="gap-0 pl-2.5 pr-[7px] group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
-				<SidebarGroup className="p-0">
+			<SidebarContent className="min-h-0 gap-0 overflow-y-auto overflow-x-hidden pl-2.5 pr-[7px] pb-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
+				<SidebarGroup className="min-h-0 p-0">
 					{/* Section label (project-sidebar__nav-label) */}
 					<div className="flex shrink-0 items-center justify-between px-2 pb-2 group-data-[collapsible=icon]:hidden">
 						<SidebarGroupLabel className="h-auto rounded-none p-0 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-passive">
@@ -395,6 +395,7 @@ function ProjectItem({
 	onRemoveProject: (projectId: string) => Promise<void>;
 }) {
 	const projectActive = selection.activeProjectId === workspace.id && !selection.activeSessionId;
+	const projectSelected = selection.activeProjectId === workspace.id;
 	const queryClient = useQueryClient();
 	const [removeError, setRemoveError] = useState<string | null>(null);
 	const [isRemoving, setIsRemoving] = useState(false);
@@ -467,9 +468,9 @@ function ProjectItem({
 				onClick={onProjectClick}
 				tooltip={workspace.name}
 				className={cn(
-					"relative h-9 gap-[9px] rounded-[6px] px-2 py-0 text-[13px] font-medium text-muted-foreground transition-all duration-150",
-					"hover:bg-interactive-hover hover:text-foreground active:bg-interactive-hover active:text-foreground",
-					"data-[active=true]:bg-interactive-active data-[active=true]:font-medium data-[active=true]:text-foreground",
+					"relative h-auto min-h-11 gap-[9px] rounded-[10px] px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-all duration-150",
+					"hover:bg-[#1B1F26] hover:text-foreground active:bg-[#1B1F26] active:text-foreground",
+					projectSelected && "bg-[#15181D] text-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-[#4F7CFF]",
 					// Reserve padding on hover, keeping it tight by default
 					"pr-2 group-hover:pr-[84px]",
 					// Icon rail: the old 36px letter tile.
@@ -485,16 +486,16 @@ function ProjectItem({
 					aria-hidden="true"
 				/>
 				<span className="hidden group-data-[collapsible=icon]:block">{workspace.name.charAt(0).toUpperCase()}</span>
-				<span className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden">{workspace.name}</span>
-				<span className="hidden h-4 min-w-4 shrink-0 place-items-center rounded bg-interactive-hover px-1 font-mono text-[10px] leading-none text-passive">
-					{sessions.length}
+				<span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+					<span className="block truncate text-[13px] font-semibold leading-4 text-[#F3F4F6]">{displayProjectName(workspace.name)}</span>
+					<span className="mt-0.5 block font-mono text-[10px] leading-3 text-[#7C8594]">{sessions.length} {sessions.length === 1 ? "Task" : "Tasks"}</span>
 				</span>
 			</SidebarMenuButton>
 			{/* Per-project actions: dashboard board, orchestrator, and a kebab
 			menu. Hidden by default, shown on hover/focus to reduce clutter. */}
 			<div
 				className={cn(
-					"absolute top-0 right-1.5 z-10 flex h-9 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150",
+					"absolute top-1 right-2 z-10 flex h-9 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150",
 					"group-data-[collapsible=icon]:hidden",
 				)}
 			>
@@ -557,7 +558,7 @@ function ProjectItem({
 			)}
 			{/* project-sidebar__sessions: indented under the project parent */}
 			{expanded && sessions.length > 0 && (
-				<SidebarMenuSub className="mx-0 ml-[4px] translate-x-0 gap-0 border-l-0 px-0 py-0.5 pl-2">
+				<SidebarMenuSub className="mx-0 ml-6 translate-x-0 gap-1 border-l border-border/40 px-0 py-1 pl-3">
 					{sessions.map((session) => {
 						const active = selection.activeSessionId === session.id;
 						return (
@@ -566,9 +567,9 @@ function ProjectItem({
 									aria-current={active ? "page" : undefined}
 									aria-label={`Open ${session.title}`}
 									className={cn(
-										"relative flex h-auto w-full items-center gap-[9px] rounded-[5px] py-1 pl-2 pr-1.5 text-left outline-hidden transition-all duration-150",
-										"hover:bg-interactive-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-sidebar-ring",
-										active && "bg-interactive-active text-foreground font-medium",
+										"relative flex h-auto w-full items-start gap-[9px] rounded-[6px] py-1.5 pl-2.5 pr-1.5 text-left outline-hidden transition-all duration-150",
+										"hover:bg-[#1B1F26] hover:text-foreground focus-visible:ring-1 focus-visible:ring-sidebar-ring",
+										active && "bg-[#15181D] text-foreground font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-[#4F7CFF]",
 									)}
 									onClick={() => selection.goSession(workspace.id, session.id)}
 									type="button"
@@ -576,7 +577,7 @@ function ProjectItem({
 									<SessionDot session={session} />
 									<span className="min-w-0 flex-1">
 										<span
-											className={cn("block truncate text-[12px]", active ? "text-foreground" : "text-muted-foreground")}
+											className={cn("block line-clamp-2 text-[12px] leading-snug", active ? "text-[#F3F4F6]" : "text-[#8B949E]")}
 										>
 											{session.title}
 										</span>
@@ -591,6 +592,19 @@ function ProjectItem({
 	);
 }
 
+
+function displayProjectName(name: string): string {
+	const acronyms = new Set(["api", "ci", "cli", "ui", "ux", "pr", "scm", "db", "http", "sql"]);
+	return name
+		.split(/[-_\s]+/)
+		.filter(Boolean)
+		.map((part) => {
+			const lower = part.toLowerCase();
+			if (acronyms.has(lower)) return lower.toUpperCase();
+			return lower.charAt(0).toUpperCase() + lower.slice(1);
+		})
+		.join(" ");
+}
 function CreateProjectButton({ onCreateProject }: Pick<SidebarProps, "onCreateProject">) {
 	return (
 		<CreateProjectFlow onCreateProject={onCreateProject}>

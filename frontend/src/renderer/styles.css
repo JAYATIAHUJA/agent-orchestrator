@@ -90,13 +90,11 @@
 }
 
 :root {
-	/* Dark — cloned from the agent-orchestrator web app (packages/web). #0a0b0d
-   * base, #15171b is the only bordered surface, hairline white-alpha lines,
-   * blue accent, orange=working / amber=needs-you / green=mergeable / red=fail. */
-	--bg: #0a0b0d;
-	--bg-1: #15171b;
-	--bg-2: #1b1d22;
-	--bg-3: #212329;
+	/* Dark layered developer-console palette: app, sidebar, surfaces, cards, hover. */
+	--bg: #0B0D10;
+	--bg-1: #15181D;
+	--bg-2: #181B21;
+	--bg-3: #20242B;
 	--fg: #f4f5f7;
 	--fg-muted: #9ba1aa;
 	--fg-passive: #646a73;
@@ -112,17 +110,17 @@
 	--amber: #e8c14a;
 	--red: #ef6b6b;
 	/* Terminal — dark palette (light override below). */
-	--term-bg: #15171b;
+	--term-bg: #15181D;
 	--term-fg: #d7d7d2;
 	--term-green: #74b98a;
 	--term-dim: #7c7c7c;
 	--term-blue: #4d8dff;
 	--term-amber: #e8c14a;
 	--shadow: 0 1px 0 rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
-	/* Sidebar surface sits a step below --bg (cloned #08090b). */
-	--sidebar-bg: #08090b;
-	--interactive-hover: rgb(255 255 255 / 0.04);
-	--interactive-active: rgb(255 255 255 / 0.07);
+	/* Sidebar surface sits between the app background and raised surfaces. */
+	--sidebar-bg: #101216;
+	--interactive-hover: #20242B;
+	--interactive-active: #181B21;
 	--kanban-column-bg: rgb(255 255 255 / 0.018);
 	--kanban-pending-glow: rgb(255 255 255 / 0.02);
 }
@@ -562,21 +560,23 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 
 .dashboard-app-header__primary-btn {
 	display: inline-flex;
-	height: 34px;
+	height: 44px;
 	align-items: center;
 	gap: 6px;
-	border-radius: 7px;
+	border-radius: 12px;
 	padding: 0 15px;
 	font-size: 13px;
 	font-weight: 600;
 	line-height: 1;
-	background: var(--accent);
-	color: var(--accent-fg);
-	transition: filter 0.12s ease;
+	background: #4F7CFF;
+	box-shadow: 0 4px 14px rgb(79 124 255 / 0.22);
+	color: #ffffff;
+	transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
 }
 
 .dashboard-app-header__primary-btn:hover {
-	filter: brightness(1.08);
+	background: #5A87FF;
+	box-shadow: 0 6px 18px rgb(79 124 255 / 0.28);
 }
 
 .dashboard-app-header__primary-btn:disabled {
@@ -584,8 +584,8 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 }
 
 .dashboard-app-header__primary-btn--compact {
-	height: 32px;
-	border-radius: 7px;
+	height: 44px;
+	border-radius: 12px;
 	padding: 0 14px;
 	font-size: 13px;
 }
@@ -1421,72 +1421,41 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 	background: rgba(255, 255, 255, 0.12);
 }
 
-/* Make sure columns and sidebars grow naturally, disabling nested scrollbars */
-.sidebar-content,
-[data-sidebar="content"],
+/* Let board columns grow naturally without disabling sidebar scrolling. */
 .column-scroll-container {
 	overflow-y: visible !important;
 	overflow-x: visible !important;
 }
 
-/* Hover card styling with subtle transitions */
+/* Hover card styling with subtle developer-console elevation */
 .session-card {
-	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+	transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 .session-card:hover {
 	opacity: 1 !important;
 }
 
-/* ── Matte Column with Anodized Aluminum / Soft Graphite Feel ──────────────── */
+/* Quiet Linear-style board columns: faint status-tinted containers. */
 .matte-column {
 	position: relative;
-	background: linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 60%); /* Fades out towards bottom */
-	border: 1px solid rgba(255, 255, 255, 0.04); /* Thin border */
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22); /* Soft ambient shadow */
+	background: linear-gradient(180deg, color-mix(in srgb, var(--column-tone, var(--accent)) 5%, transparent), rgba(255, 255, 255, 0.015) 48%, rgba(255, 255, 255, 0.01));
+	border: 1px solid rgba(255, 255, 255, 0.045);
+	box-shadow: none;
 	overflow: hidden;
-	transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-/* Subtle animated dither/noise overlay using pseudo-element */
 .matte-column::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-	background-size: 150px 150px;
-	opacity: 0.04; /* Very soft grain */
-	pointer-events: none;
-	animation: dither-slow 28s infinite linear;
-	will-change: background-position;
-	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 50%); /* Fades out completely by 50% */
-	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 50%);
+	content: none;
 }
 
-/* Hover refinements */
 .matte-column:hover {
-	background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 60%); /* Slightly brighter on hover */
-	border-color: rgba(255, 255, 255, 0.07); /* Increase border contrast by a few percent */
-	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.32);
+	background: linear-gradient(180deg, color-mix(in srgb, var(--column-tone, var(--accent)) 7%, transparent), rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.012));
+	border-color: rgba(255, 255, 255, 0.07);
 }
 
-.matte-column:hover::before {
-	opacity: 0.08; /* Slightly increase noise visibility on hover */
-}
-
-/* Keep the column header and card elements above the noise texture background */
 .matte-column > * {
 	position: relative;
 	z-index: 2;
-}
-
-@keyframes dither-slow {
-	0% {
-		background-position: 0px 0px;
-	}
-	100% {
-		background-position: 80px 80px;
-	}
 }

@@ -1,0 +1,6 @@
+./cdc_wiring.go
+./daemon.go
+./lifecycle_wiring.go
+./scm_wiring.go
+./stale.go
+./telemetry_wiring.go

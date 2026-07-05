@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { GitBranch } from "lucide-react";
-import { type AttentionZone, type WorkspaceSession, attentionZone, workerSessions, sessionNeedsAttention } from "../types/workspace";
+import { Activity, Bot, GitBranch } from "lucide-react";
+import { type AttentionZone, type WorkspaceSession, attentionZone, workerSessions, sessionNeedsAttention, sessionIsActive } from "../types/workspace";
 import { useSessionScmSummary, type SessionPRSummary } from "../hooks/useSessionScmSummary";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { BoardToolbar } from "./BoardToolbar";
@@ -30,28 +30,28 @@ const COLUMNS: Column[] = [
 		label: "Working",
 		dot: "var(--orange)",
 		dotGlow: true,
-		titleClass: "text-working font-bold uppercase tracking-wide",
+		titleClass: "text-working font-semibold",
 	},
 	{
 		level: "action",
 		label: "Needs you",
 		dot: "var(--amber)",
 		dotGlow: true,
-		titleClass: "text-warning font-bold uppercase tracking-wide",
+		titleClass: "text-warning font-semibold",
 	},
 	{
 		level: "pending",
 		label: "In review",
 		dot: "var(--fg-passive)",
 		dotGlow: false,
-		titleClass: "text-muted-foreground font-bold uppercase tracking-wide",
+		titleClass: "text-muted-foreground font-semibold",
 	},
 	{
 		level: "merge",
 		label: "Ready to merge",
 		dot: "var(--green)",
 		dotGlow: true,
-		titleClass: "text-success font-bold uppercase tracking-wide",
+		titleClass: "text-success font-semibold",
 	},
 ];
 
@@ -63,6 +63,8 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	const all = workspaceQuery.data ?? [];
 	const workspaces = projectId ? all.filter((w) => w.id === projectId) : all;
 	const sessions = workspaces.flatMap((w) => workerSessions(w.sessions));
+	const activeAgents = sessions.filter(sessionIsActive).length;
+	const taskCount = sessions.length;
 
 	const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
 
@@ -109,7 +111,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 
 	return (
 		<div className="flex h-full min-h-0 flex-col bg-background text-foreground relative overflow-y-auto">
-			{/* Sticky Toolbar replacement of old header */}
+			<BoardHeader activeAgents={activeAgents} taskCount={taskCount} />
 			<BoardToolbar
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
@@ -121,7 +123,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 				{workspaceQuery.isError ? (
 					<p className="py-16 text-center text-[13px] text-passive">Could not load sessions.</p>
 				) : (
-					<div className="kanban-columns-wrapper flex gap-6 items-start justify-between min-w-[1000px] h-fit p-6 pb-24">
+					<div className="kanban-columns-wrapper flex gap-5 items-start justify-between min-w-[1080px] h-fit p-6 pb-24">
 						{COLUMNS.map((col) => {
 							const colSessions = byZone.get(col.level) ?? [];
 							// Sort column items based on default attention priority
@@ -197,6 +199,39 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	);
 }
 
+type BoardHeaderProps = {
+	activeAgents: number;
+	taskCount: number;
+};
+
+function BoardHeader({ activeAgents, taskCount }: BoardHeaderProps) {
+	return (
+		<header className="px-6 pt-7 pb-6">
+			<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+				<div className="min-w-0">
+					<h1 className="text-[31px] font-bold leading-none tracking-normal text-[#F5F5F5]">Board</h1>
+					<p className="mt-2 text-[14px] font-normal leading-5 text-[#8B949E]">
+						Track AI agents as they progress from work ? review ? merge.
+					</p>
+				</div>
+				<div className="flex flex-wrap items-center gap-2 pt-1">
+					<BoardStatChip icon={<Activity className="h-3.5 w-3.5 text-success" />} label={`${activeAgents} Active Agents`} />
+					<BoardStatChip icon={<Bot className="h-3.5 w-3.5 text-muted-foreground" />} label={`${taskCount} Tasks`} />
+				</div>
+			</div>
+		</header>
+	);
+}
+
+function BoardStatChip({ icon, label }: { icon: ReactNode; label: string }) {
+	return (
+		<span className="inline-flex h-8 items-center gap-2 rounded-[10px] border border-border/70 bg-bg-1/55 px-3 text-[13px] font-medium text-muted-foreground">
+			{icon}
+			<span>{label}</span>
+		</span>
+	);
+}
+
 function ZoneColumn({
 	col,
 	sessions,
@@ -207,16 +242,19 @@ function ZoneColumn({
 	onOpen: (s: WorkspaceSession) => void;
 }) {
 	return (
-		<section className="matte-column flex flex-col flex-1 min-w-0 rounded-none p-2.5 h-fit">
+		<section
+			className="matte-column flex flex-col flex-1 min-w-[260px] rounded-[4px] p-5 h-fit"
+			style={{ "--column-tone": col.dot } as CSSProperties}
+		>
 			{/* Lightweight Column Header */}
-			<div className="sticky top-0 z-10 flex shrink-0 items-center gap-[9px] px-3 pb-5 pt-1 bg-transparent rounded-none">
+			<div className="sticky top-0 z-10 flex shrink-0 items-center gap-[9px] px-0 pb-4 pt-0 bg-transparent">
 				<span
 					className="h-3.5 w-1.5 rounded-[2px]"
 					style={{
 						background: col.dot,
 					}}
 				/>
-				<span className={cn("text-[11px]", col.titleClass)}>{col.label}</span>
+				<span className={cn("text-[13px]", col.titleClass)}>{col.label}</span>
 				<span className="ml-auto font-mono text-[11px] leading-none text-passive">{sessions.length}</span>
 			</div>
 			
@@ -225,7 +263,7 @@ function ZoneColumn({
 					<SessionCard key={session.id} session={session} onOpen={() => onOpen(session)} />
 				))}
 				{sessions.length === 0 && (
-					<div className="flex flex-col items-center justify-center py-12 px-4 rounded-none border border-dashed border-border/10 text-center">
+					<div className="flex flex-col items-center justify-center py-12 px-4 rounded-[4px] border border-dashed border-border/10 text-center">
 						<span className="text-[11.5px] text-passive font-light">No tasks</span>
 					</div>
 				)}
@@ -243,7 +281,7 @@ function SessionCard({ session, onOpen }: { session: WorkspaceSession; onOpen: (
 	return (
 		<button
 			className={cn(
-				"session-card group relative w-full rounded-[8px] border border-white/5 hover:border-white/10 bg-bg-2 p-3.5 text-left transition-all duration-150 outline-none"
+				"session-card group relative w-full rounded-[4px] border border-[#262A31] bg-[#181B21] cursor-grab p-3.5 text-left shadow-none transition-all duration-150 ease-out outline-none hover:-translate-y-0.5 hover:bg-[#20242B] hover:border-[#4B5563] hover:shadow-[0_14px_44px_rgba(0,0,0,.42)] active:cursor-grabbing"
 			)}
 			onClick={onOpen}
 			type="button"
@@ -274,7 +312,7 @@ function SessionCard({ session, onOpen }: { session: WorkspaceSession; onOpen: (
 						{badge.label}
 					</span>
 				</span>
-				<span className="ml-auto shrink-0 font-mono text-[10px] text-passive">
+				<span className="ml-auto shrink-0 font-mono text-[10px] text-passive transition-colors group-hover:text-muted-foreground">
 					{agentLabel(session.provider)}
 				</span>
 			</div>
@@ -284,13 +322,13 @@ function SessionCard({ session, onOpen }: { session: WorkspaceSession; onOpen: (
 				<div className="overflow-hidden">
 					<div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out delay-75">
 						{showBranch && (
-							<div className="mt-2.5 flex items-center min-w-0 gap-1.5 font-mono text-[10.5px] text-passive/85">
+							<div className="mt-2.5 flex items-center min-w-0 gap-1.5 font-mono text-[10.5px] text-passive/85 transition-colors group-hover:text-muted-foreground">
 								<GitBranch className="h-3.5 w-3.5 inline shrink-0" />
 								<span className="truncate block">{branch}</span>
 							</div>
 						)}
 
-						<div className="mt-3.5 border-t border-border/10 pt-3 font-mono text-[10.5px] text-passive">
+						<div className="mt-3.5 border-t border-border/10 pt-3 font-mono text-[10.5px] text-passive transition-colors group-hover:border-border/40 group-hover:text-muted-foreground">
 							{prSummaries.length > 0 ? (
 								<div className="flex flex-col gap-2.5">
 									{prSummaries.map((prSummary, index) => (
@@ -302,7 +340,7 @@ function SessionCard({ session, onOpen }: { session: WorkspaceSession; onOpen: (
 									))}
 								</div>
 							) : (
-								<div className="text-[10px] text-passive/70 font-light">No pull requests opened yet.</div>
+								<div className="text-[10px] text-passive/70 font-light transition-colors group-hover:text-muted-foreground">No pull requests opened yet.</div>
 							)}
 						</div>
 					</div>
@@ -316,14 +354,14 @@ function BoardPRSummary({ className, pr }: { className?: string; pr: SessionPRSu
 	const diffSummary = prDiffSummary(pr);
 	return (
 		<div className={cn("flex min-w-0 flex-col gap-1", className)}>
-			<span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
+			<span className="flex items-center gap-1.5 text-[10px] text-muted-foreground/75 transition-colors group-hover:text-muted-foreground">
 				<span className="font-semibold text-accent">#{pr.number}</span>
 				<span>·</span>
 				<span className="capitalize">{pr.state}</span>
 			</span>
-			{diffSummary ? <span className="truncate text-passive/85">{diffSummary}</span> : null}
+			{diffSummary ? <span className="truncate text-passive/85 transition-colors group-hover:text-muted-foreground">{diffSummary}</span> : null}
 			<PRStatusStrip pr={pr} />
-			<PRAttentionPanel className="mt-1 pt-1 border-t border-border/10" interactiveLinks={false} maxItems={1} pr={pr} />
+			<PRAttentionPanel className="mt-1 border-t border-border/10 pt-1 transition-colors group-hover:border-border/40" interactiveLinks={false} maxItems={1} pr={pr} />
 		</div>
 	);
 }

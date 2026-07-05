@@ -1,0 +1,8 @@
+./camelcase.go
+./context.go
+./date.go
+./doc.go
+./entities.go
+./helper.go
+./reflect.go
+./struct.go

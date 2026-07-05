@@ -1,0 +1,7 @@
+./doc.go
+./entities.go
+./helper.go
+./jsonschema.go
+./reflect.go
+./walk_schema.go
+./yaml.go

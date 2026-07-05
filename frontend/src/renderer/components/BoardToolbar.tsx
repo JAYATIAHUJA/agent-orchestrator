@@ -33,7 +33,7 @@ export function BoardToolbar({
 	}, []);
 
 	return (
-		<div className="sticky top-0 z-20 flex flex-col gap-3 px-6 py-4 border-b border-border/40 bg-background/70 backdrop-blur-md">
+		<div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border/40 bg-background/70 px-6 pt-0 pb-4 backdrop-blur-md">
 			<div className="flex flex-wrap items-center justify-between gap-4">
 				{/* Left side: Search and filters */}
 				<div className="flex flex-wrap items-center gap-3 flex-grow max-w-4xl">
@@ -64,7 +64,7 @@ export function BoardToolbar({
 					{/* Create button */}
 					<button
 						onClick={onCreateTask}
-						className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-accent-fg text-[12.5px] font-medium py-1.5 px-3.5 rounded-lg shadow-md transition-all active:scale-[0.98]"
+						className="flex h-11 items-center gap-2 rounded-[12px] bg-[#4F7CFF] px-4 text-[13px] font-semibold text-white shadow-[0_4px_14px_rgba(79,124,255,.22)] transition-all hover:bg-[#5A87FF] hover:shadow-[0_6px_18px_rgba(79,124,255,.28)] active:scale-[0.98]"
 						type="button"
 					>
 						<Plus className="h-4 w-4" />
