@@ -178,8 +178,8 @@ function createWindow(): void {
 	mainWindow = new BrowserWindow({
 		width: 1320,
 		height: 860,
-		minWidth: 960,
-		minHeight: 640,
+		minWidth: 720,
+		minHeight: 560,
 		title: "Agent Orchestrator",
 		icon: windowIconPath(),
 		backgroundColor: "#0f1014",
