@@ -151,7 +151,7 @@ export function Sidebar({
 	const { onPointerDown: onResizePointerDown, onDoubleClick: onResizeDoubleClick } = useResizable({
 		cssVar: "--ao-sidebar-w",
 		storageKey: "ao-sidebar-w",
-		defaultWidth: 240,
+		defaultWidth: 216,
 		min: 200,
 		max: 420,
 		edge: "right",
@@ -458,7 +458,7 @@ function ProjectItem({
 	};
 
 	return (
-		<SidebarMenuItem className="mb-px group-data-[collapsible=icon]:mb-0">
+		<SidebarMenuItem className="mb-px group-data-[collapsible=icon]:mb-0 group relative">
 			{/* project-sidebar__proj-row */}
 			<SidebarMenuButton
 				aria-current={projectActive ? "page" : undefined}
@@ -467,23 +467,21 @@ function ProjectItem({
 				onClick={onProjectClick}
 				tooltip={workspace.name}
 				className={cn(
-					"relative h-9 gap-[9px] rounded-[5px] px-1.5 py-0 text-[13px] font-medium text-muted-foreground transition-[background-color,padding,color]",
-					"before:absolute before:top-2 before:bottom-2 before:left-0 before:w-px before:rounded-full before:bg-transparent",
+					"relative h-9 gap-[9px] rounded-[6px] px-2 py-0 text-[13px] font-medium text-muted-foreground transition-all duration-150",
 					"hover:bg-interactive-hover hover:text-foreground active:bg-interactive-hover active:text-foreground",
-					"data-[active=true]:bg-interactive-active data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:before:bg-accent",
-					// Always reserve room for the action cluster (dashboard,
-					// orchestrator, kebab) — icons are always visible, not hover-gated.
-					"pr-[84px]",
+					"data-[active=true]:bg-interactive-active data-[active=true]:font-medium data-[active=true]:text-foreground",
+					// Reserve padding on hover, keeping it tight by default
+					"pr-2 group-hover:pr-[84px]",
 					// Icon rail: the old 36px letter tile.
 					"group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:font-semibold",
 				)}
 			>
 				<ChevronRight
 					className={cn(
-						"h-[9px]! w-[9px]! shrink-0 text-passive transition-transform group-data-[collapsible=icon]:hidden",
+						"h-3.5 w-3.5 shrink-0 text-passive transition-transform group-data-[collapsible=icon]:hidden",
 						expanded && "rotate-90",
 					)}
-					strokeWidth={2.5}
+					strokeWidth={2}
 					aria-hidden="true"
 				/>
 				<span className="hidden group-data-[collapsible=icon]:block">{workspace.name.charAt(0).toUpperCase()}</span>
@@ -493,11 +491,10 @@ function ProjectItem({
 				</span>
 			</SidebarMenuButton>
 			{/* Per-project actions: dashboard board, orchestrator, and a kebab
-			menu. Always visible (not hover-gated) to avoid CSS :hover group
-			propagation issues in Electron's Chromium. Hidden in the icon rail. */}
+			menu. Hidden by default, shown on hover/focus to reduce clutter. */}
 			<div
 				className={cn(
-					"absolute top-0 right-1 z-10 flex h-9 items-center gap-px",
+					"absolute top-0 right-1.5 z-10 flex h-9 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150",
 					"group-data-[collapsible=icon]:hidden",
 				)}
 			>
@@ -558,10 +555,9 @@ function ProjectItem({
 					{removeError}
 				</span>
 			)}
-			{/* project-sidebar__sessions: indented under the project parent so worker
-          sessions read as children without adding a persistent guide rail. */}
+			{/* project-sidebar__sessions: indented under the project parent */}
 			{expanded && sessions.length > 0 && (
-				<SidebarMenuSub className="mx-0 ml-[18px] translate-x-0 gap-0 border-l-0 px-0 py-1 pl-2.5">
+				<SidebarMenuSub className="mx-0 ml-[4px] translate-x-0 gap-0 border-l-0 px-0 py-0.5 pl-2">
 					{sessions.map((session) => {
 						const active = selection.activeSessionId === session.id;
 						return (
@@ -570,10 +566,9 @@ function ProjectItem({
 									aria-current={active ? "page" : undefined}
 									aria-label={`Open ${session.title}`}
 									className={cn(
-										"relative flex h-auto w-full items-center gap-[9px] rounded-[4px] py-[5px] pl-2.5 pr-1.5 text-left outline-hidden transition-[color]",
-										"before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-px before:rounded-full before:bg-transparent",
-										"hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-										active && "text-foreground before:bg-accent",
+										"relative flex h-auto w-full items-center gap-[9px] rounded-[5px] py-1 pl-2 pr-1.5 text-left outline-hidden transition-all duration-150",
+										"hover:bg-interactive-hover hover:text-foreground focus-visible:ring-1 focus-visible:ring-sidebar-ring",
+										active && "bg-interactive-active text-foreground font-medium",
 									)}
 									onClick={() => selection.goSession(workspace.id, session.id)}
 									type="button"

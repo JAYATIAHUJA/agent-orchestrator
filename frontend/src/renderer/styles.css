@@ -1402,3 +1402,91 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 	color: var(--red);
 	font-size: 12px;
 }
+
+/* ── Redesign Polish ────────────────────────────────────────────────────── */
+
+/* Disable nested scrollbars */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+/* Make sure columns and sidebars grow naturally, disabling nested scrollbars */
+.sidebar-content,
+[data-sidebar="content"],
+.column-scroll-container {
+	overflow-y: visible !important;
+	overflow-x: visible !important;
+}
+
+/* Hover card styling with subtle transitions */
+.session-card {
+	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.session-card:hover {
+	opacity: 1 !important;
+}
+
+/* ── Matte Column with Anodized Aluminum / Soft Graphite Feel ──────────────── */
+.matte-column {
+	position: relative;
+	background: linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 60%); /* Fades out towards bottom */
+	border: 1px solid rgba(255, 255, 255, 0.04); /* Thin border */
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22); /* Soft ambient shadow */
+	overflow: hidden;
+	transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Subtle animated dither/noise overlay using pseudo-element */
+.matte-column::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+	background-size: 150px 150px;
+	opacity: 0.04; /* Very soft grain */
+	pointer-events: none;
+	animation: dither-slow 28s infinite linear;
+	will-change: background-position;
+	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 50%); /* Fades out completely by 50% */
+	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 50%);
+}
+
+/* Hover refinements */
+.matte-column:hover {
+	background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 60%); /* Slightly brighter on hover */
+	border-color: rgba(255, 255, 255, 0.07); /* Increase border contrast by a few percent */
+	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.32);
+}
+
+.matte-column:hover::before {
+	opacity: 0.08; /* Slightly increase noise visibility on hover */
+}
+
+/* Keep the column header and card elements above the noise texture background */
+.matte-column > * {
+	position: relative;
+	z-index: 2;
+}
+
+@keyframes dither-slow {
+	0% {
+		background-position: 0px 0px;
+	}
+	100% {
+		background-position: 80px 80px;
+	}
+}

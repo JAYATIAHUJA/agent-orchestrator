@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { type AttentionZone, type WorkspaceSession, attentionZone, workerSessions } from "../types/workspace";
+import { GitBranch } from "lucide-react";
+import { type AttentionZone, type WorkspaceSession, attentionZone, workerSessions, sessionNeedsAttention } from "../types/workspace";
 import { useSessionScmSummary, type SessionPRSummary } from "../hooks/useSessionScmSummary";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
-import { DashboardSubhead } from "./DashboardSubhead";
-import { OrchestratorIcon } from "./icons";
+import { BoardToolbar } from "./BoardToolbar";
 import { NewTaskDialog } from "./NewTaskDialog";
-import { spawnOrchestrator } from "../lib/spawn-orchestrator";
 import { prDiffSummary, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { cn } from "../lib/utils";
 import { PRAttentionPanel, PRStatusStrip } from "./PRSummaryDisplay";
@@ -18,49 +16,42 @@ type SessionsBoardProps = {
 	projectId?: string;
 };
 
-// The four kanban columns, left→right by flow (work → review → merge), ported
-// verbatim from agent-orchestrator (SIMPLE_KANBAN_LEVELS + AttentionZone +
-// mc-board.css). "done" is archived, not a column.
 type Column = {
 	level: AttentionZone;
 	label: string;
-	glow: string;
 	dot: string;
 	dotGlow: boolean;
 	titleClass: string;
 };
+
 const COLUMNS: Column[] = [
 	{
 		level: "working",
 		label: "Working",
-		glow: "color-mix(in srgb, var(--orange) 7%, transparent)",
 		dot: "var(--orange)",
 		dotGlow: true,
-		titleClass: "text-working",
+		titleClass: "text-working font-bold uppercase tracking-wide",
 	},
 	{
 		level: "action",
 		label: "Needs you",
-		glow: "color-mix(in srgb, var(--amber) 6%, transparent)",
 		dot: "var(--amber)",
 		dotGlow: true,
-		titleClass: "text-warning",
+		titleClass: "text-warning font-bold uppercase tracking-wide",
 	},
 	{
 		level: "pending",
 		label: "In review",
-		glow: "var(--kanban-pending-glow)",
-		dot: "var(--fg-muted)",
+		dot: "var(--fg-passive)",
 		dotGlow: false,
-		titleClass: "text-muted-foreground",
+		titleClass: "text-muted-foreground font-bold uppercase tracking-wide",
 	},
 	{
 		level: "merge",
 		label: "Ready to merge",
-		glow: "color-mix(in srgb, var(--green) 7%, transparent)",
 		dot: "var(--green)",
 		dotGlow: true,
-		titleClass: "text-success",
+		titleClass: "text-success font-bold uppercase tracking-wide",
 	},
 ];
 
@@ -68,23 +59,28 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const workspaceQuery = useWorkspaceQuery();
+	
 	const all = workspaceQuery.data ?? [];
 	const workspaces = projectId ? all.filter((w) => w.id === projectId) : all;
 	const sessions = workspaces.flatMap((w) => workerSessions(w.sessions));
-	const orchestrator = projectId
-		? workspaces[0]?.sessions.find((session) => session.kind === "orchestrator" && session.status !== "terminated")
-		: undefined;
-	const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
-	const [isSpawning, setIsSpawning] = useState(false);
 
-	const byZone = new Map<AttentionZone, WorkspaceSession[]>();
-	for (const session of sessions) {
-		const zone = attentionZone(session);
-		(byZone.get(zone) ?? byZone.set(zone, []).get(zone)!).push(session);
-	}
-	const done = byZone.get("done") ?? [];
-	// Collapsed by default, like agent-orchestrator's done-bar: finished and
-	// killed sessions cost one quiet line under the board until expanded.
+	const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
+
+	// Toolbar Filter & Search States
+	const [searchQuery, setSearchQuery] = useState("");
+
+	// Filter sessions based on search
+	const filteredSessions = sessions.filter((session) => {
+		const matchesSearch = searchQuery === "" || 
+			session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			(session.branch && session.branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
+			session.status.toLowerCase().includes(searchQuery.toLowerCase());
+		if (!matchesSearch) return false;
+
+		return true;
+	});
+
+	// Collapsed Done / Terminated bar
 	const [doneExpanded, setDoneExpanded] = useState(false);
 
 	const openSession = (session: WorkspaceSession) =>
@@ -93,27 +89,6 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 			params: { projectId: session.workspaceId, sessionId: session.id },
 		});
 
-	const openOrchestrator = async () => {
-		if (!projectId) return;
-		if (orchestrator) {
-			void navigate({
-				to: "/projects/$projectId/sessions/$sessionId",
-				params: { projectId, sessionId: orchestrator.id },
-			});
-			return;
-		}
-		setIsSpawning(true);
-		try {
-			const sessionId = await spawnOrchestrator(projectId);
-			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
-			void navigate({
-				to: "/projects/$projectId/sessions/$sessionId",
-				params: { projectId, sessionId },
-			});
-		} finally {
-			setIsSpawning(false);
-		}
-	};
 
 	const handleTaskCreated = async (sessionId: string) => {
 		if (!projectId) return;
@@ -124,62 +99,61 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		});
 	};
 
-	const actions = projectId ? (
-		<>
-			<button
-				aria-label="New task"
-				className="dashboard-app-header__accent-btn"
-				onClick={() => setIsNewTaskOpen(true)}
-				type="button"
-			>
-				<Plus className="h-3.5 w-3.5" aria-hidden="true" />
-				New task
-			</button>
-			<button
-				aria-label={orchestrator ? "Orchestrator" : "Spawn Orchestrator"}
-				className="dashboard-app-header__primary-btn"
-				disabled={isSpawning}
-				onClick={() => void openOrchestrator()}
-				type="button"
-			>
-				<OrchestratorIcon className="h-3.5 w-3.5" aria-hidden="true" />
-				{isSpawning ? "Spawning..." : orchestrator ? "Orchestrator" : "Spawn Orchestrator"}
-			</button>
-		</>
-	) : undefined;
+	// Group filtered sessions into Kanban Columns
+	const byZone = new Map<AttentionZone, WorkspaceSession[]>();
+	for (const session of filteredSessions) {
+		const zone = attentionZone(session);
+		(byZone.get(zone) ?? byZone.set(zone, []).get(zone)!).push(session);
+	}
+	const done = byZone.get("done") ?? [];
 
 	return (
-		<div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-			<DashboardSubhead
-				title="Board"
-				subtitle="Live agent sessions flowing from work → review → merge."
-				actions={actions}
+		<div className="flex h-full min-h-0 flex-col bg-background text-foreground relative overflow-y-auto">
+			{/* Sticky Toolbar replacement of old header */}
+			<BoardToolbar
+				searchQuery={searchQuery}
+				setSearchQuery={setSearchQuery}
+				onCreateTask={() => setIsNewTaskOpen(true)}
 			/>
 
-			<div className="min-h-0 flex-1 overflow-hidden p-[18px]">
+			{/* Column Scroll Container - Horizontal scroll, grows vertically */}
+			<div className="flex-grow overflow-x-auto overflow-y-visible w-full min-h-0">
 				{workspaceQuery.isError ? (
-					<p className="py-10 text-center text-[12px] text-passive">Could not load sessions.</p>
+					<p className="py-16 text-center text-[13px] text-passive">Could not load sessions.</p>
 				) : (
-					<div className="grid h-full grid-cols-4 gap-2">
-						{COLUMNS.map((col) => (
-							<ZoneColumn key={col.level} col={col} sessions={byZone.get(col.level) ?? []} onOpen={openSession} />
-						))}
+					<div className="kanban-columns-wrapper flex gap-6 items-start justify-between min-w-[1000px] h-fit p-6 pb-24">
+						{COLUMNS.map((col) => {
+							const colSessions = byZone.get(col.level) ?? [];
+							// Sort column items based on default attention priority
+							const sortedColSessions = [...colSessions].sort((a, b) => {
+								const aAttention = sessionNeedsAttention(a) ? 1 : 0;
+								const bAttention = sessionNeedsAttention(b) ? 1 : 0;
+								if (aAttention !== bAttention) {
+									return bAttention - aAttention;
+								}
+								const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+								const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+								return bTime - aTime;
+							});
+
+							return (
+								<ZoneColumn
+									key={col.level}
+									col={col}
+									sessions={sortedColSessions}
+									onOpen={openSession}
+								/>
+							);
+						})}
 					</div>
 				)}
 			</div>
 
 			{done.length > 0 && (
-				<div className="shrink-0 border-t border-border px-[18px]">
-					{/* agent-orchestrator's done-bar (Dashboard.tsx + globals.css):
-					    a full-width chevron + label + count toggle row. min-h matches
-					    the sidebar footer (7px pad ×2 + 37px Settings button) so this
-					    border-t aligns with the sidebar's footer border. The button is
-					    37px (not the 35.5px its text-[13px] implies) because the
-					    unlayered `button { font: inherit }` in styles.css outranks
-					    Tailwind's layered text utilities, leaving it at 14px/21px. */}
+				<div className="shrink-0 border-t border-border px-6 py-1 bg-bg-1/40 z-10 sticky bottom-0 bg-background/90 backdrop-blur">
 					<button
 						aria-expanded={doneExpanded}
-						className="group flex min-h-[51px] w-full items-center gap-2 py-2 text-muted-foreground transition-colors hover:text-foreground"
+						className="group flex min-h-[44px] w-full items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
 						onClick={() => setDoneExpanded((v) => !v)}
 						type="button"
 					>
@@ -194,14 +168,14 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 							<path d="m9 18 6-6-6-6" />
 						</svg>
 						<span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.05em]">Done / Terminated</span>
-						<span className="ml-auto shrink-0 font-mono text-[10px] text-passive">{done.length}</span>
+						<span className="ml-auto shrink-0 font-mono text-[10px] text-passive bg-bg-3 px-2 py-0.5 rounded-full">{done.length}</span>
 					</button>
 					{doneExpanded && (
-						<div className="flex flex-wrap gap-2 pb-2.5 pt-1">
+						<div className="flex flex-wrap gap-2 pb-4 pt-1">
 							{done.map((s) => (
 								<button
 									key={s.id}
-									className="rounded-[7px] border border-border bg-surface px-2.5 py-1.5 text-left transition-colors hover:border-border-strong"
+									className="rounded-[6px] border border-border bg-bg-2 px-3 py-1.5 text-left transition-all duration-150 hover:bg-bg-3 hover:border-border-strong"
 									onClick={() => openSession(s)}
 									type="button"
 								>
@@ -212,6 +186,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 					)}
 				</div>
 			)}
+
 			<NewTaskDialog
 				open={isNewTaskOpen}
 				projectId={projectId}
@@ -232,27 +207,28 @@ function ZoneColumn({
 	onOpen: (s: WorkspaceSession) => void;
 }) {
 	return (
-		<section
-			className="flex min-w-0 flex-col overflow-hidden rounded-[13px]"
-			style={{ background: `linear-gradient(180deg, ${col.glow}, transparent 130px), var(--kanban-column-bg)` }}
-		>
-			<div className="flex shrink-0 items-center gap-[9px] px-[15px] pb-[11px] pt-[14px]">
+		<section className="matte-column flex flex-col flex-1 min-w-0 rounded-none p-2.5 h-fit">
+			{/* Lightweight Column Header */}
+			<div className="sticky top-0 z-10 flex shrink-0 items-center gap-[9px] px-3 pb-5 pt-1 bg-transparent rounded-none">
 				<span
-					className="h-[7px] w-[7px] rounded-full"
+					className="h-3.5 w-1.5 rounded-[2px]"
 					style={{
 						background: col.dot,
-						boxShadow: col.dotGlow ? `0 0 7px color-mix(in srgb, ${col.dot} 60%, transparent)` : undefined,
 					}}
 				/>
-				<span className={cn("text-[11px] font-semibold uppercase tracking-[0.08em]", col.titleClass)}>{col.label}</span>
+				<span className={cn("text-[11px]", col.titleClass)}>{col.label}</span>
 				<span className="ml-auto font-mono text-[11px] leading-none text-passive">{sessions.length}</span>
 			</div>
-			<div className="min-h-0 flex-1 overflow-y-auto px-[11px] pb-3">
-				<div className="flex flex-col gap-2.5">
-					{sessions.map((session) => (
-						<SessionCard key={session.id} session={session} onOpen={() => onOpen(session)} />
-					))}
-				</div>
+			
+			<div className="flex flex-col gap-3 mt-3 h-fit">
+				{sessions.map((session) => (
+					<SessionCard key={session.id} session={session} onOpen={() => onOpen(session)} />
+				))}
+				{sessions.length === 0 && (
+					<div className="flex flex-col items-center justify-center py-12 px-4 rounded-none border border-dashed border-border/10 text-center">
+						<span className="text-[11.5px] text-passive font-light">No tasks</span>
+					</div>
+				)}
 			</div>
 		</section>
 	);
@@ -263,45 +239,74 @@ function SessionCard({ session, onOpen }: { session: WorkspaceSession; onOpen: (
 	const branch = session.branch || "";
 	const showBranch = branch !== "" && !sameLabel(branch, session.title) && !sameLabel(branch, session.id);
 	const prSummaries = sessionPRDisplaySummaries(session, useSessionScmSummary(session.id).data);
+
 	return (
 		<button
-			className="w-full rounded-[7px] border border-border bg-surface text-left transition-colors hover:border-border-strong"
+			className={cn(
+				"session-card group relative w-full rounded-[8px] border border-white/5 hover:border-white/10 bg-bg-2 p-3.5 text-left transition-all duration-150 outline-none"
+			)}
 			onClick={onOpen}
 			type="button"
 		>
-			<div className="flex items-center gap-2 px-[13px] pb-[9px] pt-3">
-				<span className={cn("inline-flex items-center gap-1.5 text-[11px] font-medium", badge.className)}>
-					<span className={cn("h-[7px] w-[7px] rounded-full bg-current")} />
-					{badge.label}
+			<div className="text-[14.5px] font-semibold leading-snug tracking-normal text-foreground">
+				{session.title}
+			</div>
+
+			{/* Metadata stays secondary so the task title remains the first read. */}
+			<div className="mt-2.5 flex items-center gap-2">
+				<span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
+					<span className={cn("h-1.5 w-1.5 rounded-full", 
+						session.status === "working" && "bg-working animate-status-pulse",
+						session.status === "needs_input" && "bg-warning",
+						session.status === "ci_failed" && "bg-error",
+						session.status === "approved" && "bg-success",
+						session.status === "mergeable" && "bg-success",
+						"bg-passive"
+					)} />
+					<span className={cn(
+						session.status === "working" && "text-working/90",
+						session.status === "needs_input" && "text-warning/90",
+						session.status === "ci_failed" && "text-error/90",
+						session.status === "approved" && "text-success/90",
+						session.status === "mergeable" && "text-success/90",
+						"text-passive"
+					)}>
+						{badge.label}
+					</span>
 				</span>
-				<span className="ml-auto shrink-0 font-mono text-[10.5px] tracking-[0.04em] text-passive">
+				<span className="ml-auto shrink-0 font-mono text-[10px] text-passive">
 					{agentLabel(session.provider)}
 				</span>
 			</div>
-			<div
-				className={cn(
-					"px-[13px] text-[13px] font-medium leading-[1.42] tracking-[-0.01em] text-foreground",
-					showBranch ? "pb-2" : "pb-3",
-					"line-clamp-2 overflow-hidden",
-				)}
-			>
-				{session.title}
-			</div>
-			{showBranch && <div className="px-[13px] pb-2.5 font-mono text-[10.5px] text-passive">{branch}</div>}
-			<div className="border-t border-border px-[13px] py-2 font-mono text-[10.5px] text-passive">
-				{prSummaries.length > 0 ? (
-					<div className="flex flex-col gap-2">
-						{prSummaries.map((prSummary, index) => (
-							<BoardPRSummary
-								className={cn(index > 0 && "border-t border-border pt-2")}
-								key={prSummary.number}
-								pr={prSummary}
-							/>
-						))}
+
+			{/* Smooth Expandable Content on Hover */}
+			<div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-300 ease-in-out">
+				<div className="overflow-hidden">
+					<div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out delay-75">
+						{showBranch && (
+							<div className="mt-2.5 flex items-center min-w-0 gap-1.5 font-mono text-[10.5px] text-passive/85">
+								<GitBranch className="h-3.5 w-3.5 inline shrink-0" />
+								<span className="truncate block">{branch}</span>
+							</div>
+						)}
+
+						<div className="mt-3.5 border-t border-border/10 pt-3 font-mono text-[10.5px] text-passive">
+							{prSummaries.length > 0 ? (
+								<div className="flex flex-col gap-2.5">
+									{prSummaries.map((prSummary, index) => (
+										<BoardPRSummary
+											className={cn(index > 0 && "border-t border-border/5 pt-2.5")}
+											key={prSummary.number}
+											pr={prSummary}
+										/>
+									))}
+								</div>
+							) : (
+								<div className="text-[10px] text-passive/70 font-light">No pull requests opened yet.</div>
+							)}
+						</div>
 					</div>
-				) : (
-					"no PR yet"
-				)}
+				</div>
 			</div>
 		</button>
 	);
@@ -311,12 +316,14 @@ function BoardPRSummary({ className, pr }: { className?: string; pr: SessionPRSu
 	const diffSummary = prDiffSummary(pr);
 	return (
 		<div className={cn("flex min-w-0 flex-col gap-1", className)}>
-			<span>
-				PR #{pr.number} · {pr.state}
+			<span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
+				<span className="font-semibold text-accent">#{pr.number}</span>
+				<span>·</span>
+				<span className="capitalize">{pr.state}</span>
 			</span>
-			{diffSummary ? <span className="truncate">{diffSummary}</span> : null}
+			{diffSummary ? <span className="truncate text-passive/85">{diffSummary}</span> : null}
 			<PRStatusStrip pr={pr} />
-			<PRAttentionPanel className="mt-1.5 pt-1.5" interactiveLinks={false} maxItems={2} pr={pr} />
+			<PRAttentionPanel className="mt-1 pt-1 border-t border-border/10" interactiveLinks={false} maxItems={1} pr={pr} />
 		</div>
 	);
 }
