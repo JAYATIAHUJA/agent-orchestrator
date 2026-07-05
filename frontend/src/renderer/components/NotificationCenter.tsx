@@ -87,13 +87,13 @@ export function NotificationCenter({ style }: NotificationCenterProps) {
 			<DropdownMenuTrigger asChild>
 				<button
 					aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
-					className="dashboard-app-header__icon-btn relative"
+					className="notification-bell-button dashboard-app-header__icon-btn relative"
 					style={style}
 					type="button"
 				>
-					<Bell className="h-[15px] w-[15px] fill-current" aria-hidden="true" />
+					<Bell className="notification-bell-icon h-[15px] w-[15px] fill-current" aria-hidden="true" />
 					{unreadCount > 0 ? (
-						<span className="pointer-events-none absolute right-[3px] top-[2px] font-mono text-[11px] font-semibold leading-none text-warning">
+						<span className="notification-bell-count pointer-events-none absolute right-[3px] top-[2px] font-mono text-[11px] font-semibold leading-none text-warning">
 							{unreadCount > 99 ? "99+" : unreadCount}
 						</span>
 					) : null}
