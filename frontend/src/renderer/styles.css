@@ -1725,7 +1725,6 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 
 .session-card {
 	min-width: 0;
-	overflow: hidden;
 	background: var(--board-card-bg) !important;
 	border-color: var(--board-card-border) !important;
 	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
@@ -1741,6 +1740,7 @@ body.is-resizing-x [data-slot="sidebar-container"] {
 
 .session-card:hover,
 .session-card:focus-visible {
+	z-index: 3;
 	background: var(--board-card-bg-hover) !important;
 	border-color: var(--board-card-border-hover) !important;
 	box-shadow: var(--board-card-shadow-hover);
