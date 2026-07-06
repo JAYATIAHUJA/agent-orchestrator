@@ -503,17 +503,19 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			// macOS/Linux. It cannot scroll a full-screen TUI that keeps its own
 			// transcript and only scrolls on PageUp/PageDown (opencode): the report
 			// is either consumed by the mux or handed to an app that ignores it.
-			// Send page keys for such apps (paneScrollsByKeyboard), on Windows
-			// (conpty has no mux, so SGR reaches the app and is ignored), and for
-			// any pane app with mouse tracking fully off.
+			// Send page keys only for apps known to scroll their transcript by keyboard.
+			// Windows otherwise falls through to xterm so normal scrollback keeps working.
 			if (term.modes.mouseTrackingMode === "none") {
 				// No app-level mouse tracking is active, so let xterm handle the wheel
 				// against its local scrollback. This is the normal shell/log-output case.
 				return true;
 			}
-			if (callbacksRef.current.paneScrollsByKeyboard || isWindowsPlatform()) {
+			if (callbacksRef.current.paneScrollsByKeyboard) {
 				emitUserInput(pageKeyReport(lines), "wheel");
 				return false;
+			}
+			if (isWindowsPlatform()) {
+				return true;
 			}
 			const button = lines < 0 ? SGR_WHEEL_UP : SGR_WHEEL_DOWN;
 			emitUserInput(sgrWheelReport(button, Math.abs(lines)), "wheel");
