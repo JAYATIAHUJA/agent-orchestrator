@@ -169,11 +169,10 @@ type XtermInternal = Terminal & {
 	};
 };
 
-// We never scroll locally (scrollback:0). Instead we synthesize SGR mouse-wheel
-// reports and write them to the pane; tmux (with `mouse on`, set by the runtime
-// adapter) acts on them and scrolls its scrollback via copy-mode. With
-// scrollback:0 xterm would otherwise convert the wheel into cursor-arrow keys
-// (its alt-buffer fallback), which move the agent's cursor rather than scrolling.
+// Full-screen panes that enable mouse tracking get synthesized SGR wheel reports
+// written to the pane; tmux/zellij can consume them and scroll their own
+// app-owned transcript. Plain shell/log-output buffers leave mouse tracking off,
+// so the wheel falls through to xterm's local scrollback instead.
 // SGR button 64 = wheel up, 65 = down; reports are 1-based and a single cell is
 // enough for a borderless single pane.
 const SGR_WHEEL_UP = 64;
@@ -258,13 +257,10 @@ export function XtermTerminal(props: XtermTerminalProps) {
 				// background, the way VS Code's terminal does; without it dim colors
 				// render washed out.
 				minimumContrastRatio: 4.5,
-				// The pane PTY runs a full-screen alt-buffer app (tmux attach) that
-				// owns scrollback itself, so xterm's own buffer never accumulates
-				// history (the alt screen doesn't feed scrollback) and wheel events
-				// are forwarded as mouse reports instead of scrolling locally. 0 also
-				// stops FitAddon reserving ~14px on the right for a scrollbar that can
-				// never appear.
-				scrollback: 0,
+				// Keep local scrollback for plain shell/output buffers. Full-screen TUIs
+				// still receive wheel input below when they enable mouse tracking, so their
+				// app-owned transcript behavior is preserved.
+				scrollback: 5000,
 				theme: props.theme === "dark" ? terminalThemes.dark : terminalThemes.light,
 			});
 		} catch (error) {
@@ -510,11 +506,12 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			// Send page keys for such apps (paneScrollsByKeyboard), on Windows
 			// (conpty has no mux, so SGR reaches the app and is ignored), and for
 			// any pane app with mouse tracking fully off.
-			if (
-				callbacksRef.current.paneScrollsByKeyboard ||
-				isWindowsPlatform() ||
-				term.modes.mouseTrackingMode === "none"
-			) {
+			if (term.modes.mouseTrackingMode === "none") {
+				// No app-level mouse tracking is active, so let xterm handle the wheel
+				// against its local scrollback. This is the normal shell/log-output case.
+				return true;
+			}
+			if (callbacksRef.current.paneScrollsByKeyboard || isWindowsPlatform()) {
 				emitUserInput(pageKeyReport(lines), "wheel");
 				return false;
 			}

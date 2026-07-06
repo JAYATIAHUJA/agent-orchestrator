@@ -233,6 +233,29 @@ select {
 	height: 100%;
 }
 
+.xterm .xterm-viewport {
+	scrollbar-color: rgb(255 255 255 / 0.16) transparent;
+	scrollbar-width: thin;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.12);
+}
+
+.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {
+	background: rgb(255 255 255 / 0.2);
+}
+
 .terminal-pane-frame:fullscreen {
 	background: var(--bg);
 }
@@ -335,12 +358,16 @@ select {
 	color: var(--fg-muted);
 }
 
+:root[data-theme="light"] .xterm .xterm-viewport {
+	scrollbar-color: rgb(0 0 0 / 0.14) transparent;
+}
+
 :root[data-theme="light"] .xterm .xterm-viewport::-webkit-scrollbar-thumb {
-	background: rgb(0 0 0 / 0.12);
+	background: rgb(0 0 0 / 0.1);
 }
 
 :root[data-theme="light"] .xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {
-	background: rgb(0 0 0 / 0.2);
+	background: rgb(0 0 0 / 0.18);
 }
 
 @keyframes status-pulse {

@@ -1,4 +1,4 @@
-import { ChevronLeft, Maximize2, Minimize2, Shield } from "lucide-react";
+import { ChevronLeft, Maximize2, Minimize2, Minus, Plus, Shield } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type WheelEvent } from "react";
 import type { Theme } from "../stores/ui-store";
 import type { TerminalTarget } from "../types/terminal";
@@ -112,7 +112,7 @@ export function CenterPane({ session, theme, daemonReady, terminalTarget, onSele
 						title="Decrease terminal font size"
 						type="button"
 					>
-						-
+						<Minus className="h-3.5 w-3.5" aria-hidden="true" />
 					</button>
 					<span className="terminal-toolbar__font-size">{fontSize}px</span>
 					<button
@@ -123,7 +123,7 @@ export function CenterPane({ session, theme, daemonReady, terminalTarget, onSele
 						title="Increase terminal font size"
 						type="button"
 					>
-						+
+						<Plus className="h-3.5 w-3.5" aria-hidden="true" />
 					</button>
 					<button
 						aria-label={isFullscreen ? "Exit terminal fullscreen" : "Open terminal fullscreen"}

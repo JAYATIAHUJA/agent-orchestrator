@@ -492,18 +492,14 @@ describe("XtermTerminal", () => {
 		expect(onInput).not.toHaveBeenCalled();
 	});
 
-	it("sends PageUp/PageDown instead of SGR reports when the pane app has mouse tracking off", () => {
+	it("lets xterm scroll local history when the pane app has mouse tracking off", () => {
 		const onInput = vi.fn();
 		render(<XtermTerminal theme="dark" onReady={(terminal) => terminal.onUserInput(onInput)} />);
 		state.lastTerminal!.modes.mouseTrackingMode = "none";
 
-		// A keyboard-scroll TUI: one page key per notch regardless of line count,
-		// so 3 lines up => a single PageUp.
-		expect(state.lastTerminal!.wheelHandler!({ deltaY: -50 } as WheelEvent)).toBe(false);
-		expect(onInput).toHaveBeenLastCalledWith("\x1b[5~", "wheel");
-
-		expect(state.lastTerminal!.wheelHandler!({ deltaY: 20 } as WheelEvent)).toBe(false);
-		expect(onInput).toHaveBeenLastCalledWith("\x1b[6~", "wheel");
+		expect(state.lastTerminal!.wheelHandler!({ deltaY: -50 } as WheelEvent)).toBe(true);
+		expect(state.lastTerminal!.wheelHandler!({ deltaY: 20 } as WheelEvent)).toBe(true);
+		expect(onInput).not.toHaveBeenCalled();
 	});
 
 	it("sends PageUp/PageDown on Windows even when the pane app tracks the mouse (conpty, no mux)", () => {
