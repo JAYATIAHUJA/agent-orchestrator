@@ -72,7 +72,7 @@ const prStateTone: Record<SessionPRSummary["state"], string> = {
 };
 
 /**
- * Tabbed inspector rail beside the terminal (Summary · Reviews · Browser).
+ * Tabbed inspector rail beside the terminal (Summary / Reviews / Browser).
  */
 export function SessionInspector({
 	session,
@@ -216,31 +216,62 @@ function SummaryView({ session }: { session: WorkspaceSession }) {
 
 function PRSummaryCard({ pr }: { pr: SessionPRSummary }) {
 	return (
-		<div className="rounded-[7px] border border-border bg-surface px-3 py-2.5">
-			<div className="flex items-center gap-2">
-				<GitPullRequest className="h-3.5 w-3.5 shrink-0 text-passive" aria-hidden="true" />
-				<span className="text-[12.5px] font-medium text-foreground">PR #{pr.number}</span>
-				<Badge variant="outline" className={cn("h-5 px-1.5 text-[10px] font-medium", prStateTone[pr.state])}>
-					{pr.state}
-				</Badge>
+		<div className="rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 flex flex-col gap-3">
+			<div className="flex items-center justify-between gap-4">
 				<a
 					href={prBrowserUrl(pr)}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-medium text-accent hover:underline"
+					className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-accent transition-colors"
 				>
-					<span>Open</span>
-					<ArrowUpRight aria-hidden="true" className="h-3 w-3" strokeWidth={2} />
+					<GitPullRequest className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+					<span>PR #{pr.number}</span>
+					<ArrowUpRight aria-hidden="true" className="h-3 w-3 opacity-60" strokeWidth={2.2} />
 				</a>
+				<Badge
+					variant="outline"
+					className={cn(
+						"h-5 px-2 text-[10px] font-bold rounded-[5px] uppercase tracking-wider border",
+						prStateTone[pr.state],
+					)}
+				>
+					{pr.state}
+				</Badge>
 			</div>
-			{pr.title ? <div className="mt-2 text-[12px] font-medium leading-snug text-foreground">{pr.title}</div> : null}
-			<PRSummaryMeta className="mt-1.5" pr={pr} />
-			<PRSummaryParts className="mt-2" pr={pr} variant="stacked" />
+			{pr.title ? (
+				<div className="text-[14px] font-bold leading-snug text-foreground tracking-tight select-text">
+					{pr.title}
+				</div>
+			) : null}
+			<PRSummaryMeta className="text-[11px]" pr={pr} showBranch={false} />
+			<div className="border-t border-border/40 my-0.5" />
+			<PRSummaryParts pr={pr} variant="stacked" />
 		</div>
 	);
 }
 
-type TimelineTone = "now" | "good" | "warn" | "neutral";
+type TimelineTone = "now" | "good" | "warn" | "neutral" | "bad";
+
+function ActivityStatusGroup({ session }: { session: WorkspaceSession }) {
+	const items: ReactNode[] = [];
+
+	items.push(<InspectorActivityPill state={session.activity?.state ?? "unknown"} />);
+
+	if (session.status === "no_signal") {
+		items.push(<TimelinePill {...ACTIVITY_WARNING_PILL.no_signal} />);
+	}
+
+	return (
+		<span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+			{items.map((item, index) => (
+				<span key={index} className="inline-flex items-center">
+					{index > 0 && <span className="mr-2 text-passive/40 select-none text-[11px]">/</span>}
+					{item}
+				</span>
+			))}
+		</span>
+	);
+}
 
 function ActivityTimeline({ session }: { session: WorkspaceSession }) {
 	const events: { tone: TimelineTone; node: ReactNode; ts: string | null }[] = [];
@@ -276,25 +307,18 @@ function ActivityTimeline({ session }: { session: WorkspaceSession }) {
 		});
 	}
 
+	let currentTone: TimelineTone = "now";
+	if (session.status === "ci_failed" || session.status === "no_signal") {
+		currentTone = "bad";
+	} else if (session.status === "changes_requested" || session.activity?.state === "waiting_input") {
+		currentTone = "warn";
+	} else if (session.activity?.state === "idle" || session.activity?.state === "exited") {
+		currentTone = "neutral";
+	}
+
 	events.push({
-		tone: "now",
-		node: (
-			<span className="inline-flex flex-wrap items-center gap-1.5">
-				<span className="inspector-timeline__badge">
-					<InspectorActivityPill state={session.activity?.state ?? "unknown"} />
-				</span>
-				{session.status === "no_signal" ? (
-					<span className="inspector-timeline__badge">
-						<TimelinePill {...ACTIVITY_WARNING_PILL.no_signal} />
-					</span>
-				) : null}
-				{scmTimelineStates(session).map((state) => (
-					<span key={state} className="inspector-timeline__badge">
-						<InspectorScmPill state={state} />
-					</span>
-				))}
-			</span>
-		),
+		tone: currentTone,
+		node: <ActivityStatusGroup session={session} />,
 		ts: session.activity?.lastActivityAt ? formatTimeCompact(session.activity.lastActivityAt) : null,
 	});
 
@@ -328,6 +352,7 @@ function ActivityTimeline({ session }: { session: WorkspaceSession }) {
 						event.tone === "now" && "inspector-timeline__ev--now",
 						event.tone === "good" && "inspector-timeline__ev--good",
 						event.tone === "warn" && "inspector-timeline__ev--warn",
+						event.tone === "bad" && "inspector-timeline__ev--bad",
 					)}
 				>
 					<span className="inspector-timeline__node" aria-hidden="true" />
@@ -351,59 +376,24 @@ const ACTIVITY_WARNING_PILL: Record<"no_signal", { label: string; tone: string; 
 	no_signal: { label: "No Signal", tone: "var(--fg-muted)", breathe: false },
 };
 
-type ScmTimelineState = "ci_failed" | "changes_requested" | "conflict";
-
-const SCM_PILL: Record<ScmTimelineState, { label: string; tone: string; breathe: boolean }> = {
-	ci_failed: { label: "CI Failed", tone: "var(--red)", breathe: false },
-	changes_requested: { label: "Changes Requested", tone: "var(--amber)", breathe: false },
-	conflict: { label: "Conflict", tone: "var(--red)", breathe: false },
-};
-
 function InspectorActivityPill({ state }: { state: SessionActivityState }) {
 	return <TimelinePill {...ACTIVITY_PILL[state]} />;
-}
-
-function InspectorScmPill({ state }: { state: ScmTimelineState }) {
-	return <TimelinePill {...SCM_PILL[state]} />;
 }
 
 function TimelinePill({ label, tone, breathe }: { label: string; tone: string; breathe: boolean }) {
 	return (
 		<span
-			className="inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[7px] px-[11px] py-[5px] text-[11.5px] font-semibold"
+			className={cn(
+				"inline-flex shrink-0 items-center whitespace-nowrap text-[11.5px] font-semibold",
+				breathe && "animate-status-pulse"
+			)}
 			style={{
 				color: tone,
-				background: `color-mix(in srgb, ${tone} 7%, transparent)`,
-				boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${tone} 25%, transparent)`,
 			}}
 		>
-			<span
-				className={cn("h-1.5 w-1.5 rounded-full", breathe && "animate-status-pulse")}
-				style={{ background: tone }}
-			/>
 			{label}
 		</span>
 	);
-}
-
-function scmTimelineStates(session: WorkspaceSession): ScmTimelineState[] {
-	const states: ScmTimelineState[] = [];
-	const seen = new Set<ScmTimelineState>();
-	const add = (state: ScmTimelineState) => {
-		if (seen.has(state)) return;
-		seen.add(state);
-		states.push(state);
-	};
-
-	if (session.status === "ci_failed") add("ci_failed");
-	if (session.status === "changes_requested") add("changes_requested");
-	for (const pr of session.prs) {
-		if (pr.ci === "failing") add("ci_failed");
-		if (pr.review === "changes_requested") add("changes_requested");
-		if (pr.mergeability === "conflicting") add("conflict");
-	}
-
-	return states;
 }
 
 function ReviewsView({
@@ -876,3 +866,4 @@ function AgentRow({ session }: { session: WorkspaceSession }) {
 		</div>
 	);
 }
+

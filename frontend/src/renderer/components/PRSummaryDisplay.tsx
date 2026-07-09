@@ -1,36 +1,71 @@
-import { ArrowUpDown, ArrowUpRight } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, ArrowUpRight, Check, X } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import type { SessionPRSummary } from "../hooks/useSessionScmSummary";
-import { prSummaryParts, type PRDisplayTone, type PRSummaryLink } from "../lib/pr-display";
+import { prBrowserUrl, prSummaryParts, type PRDisplayTone, type PRSummaryLink } from "../lib/pr-display";
 import { cn } from "../lib/utils";
 
-const toneClass: Record<PRDisplayTone, string> = {
-	neutral: "text-muted-foreground",
-	passive: "text-passive",
-	success: "text-success",
-	warning: "text-warning",
-	error: "text-error",
+const statusChipStyles: Record<PRDisplayTone, { bg: string; text: string; border: string; icon: ReactNode }> = {
+	success: {
+		bg: "bg-success/5",
+		text: "text-success",
+		border: "border-success/20",
+		icon: <Check className="h-3 w-3 shrink-0" aria-hidden="true" strokeWidth={3} />,
+	},
+	warning: {
+		bg: "bg-warning/5",
+		text: "text-warning",
+		border: "border-warning/20",
+		icon: <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" strokeWidth={2.5} />,
+	},
+	error: {
+		bg: "bg-error/5",
+		text: "text-error",
+		border: "border-error/20",
+		icon: <X className="h-3 w-3 shrink-0" aria-hidden="true" strokeWidth={3} />,
+	},
+	neutral: {
+		bg: "bg-muted/5",
+		text: "text-muted-foreground",
+		border: "border-border",
+		icon: null,
+	},
+	passive: {
+		bg: "bg-muted/5",
+		text: "text-passive",
+		border: "border-border",
+		icon: null,
+	},
 };
 
 export function PRSummaryMeta({
 	className,
 	leading,
 	pr,
+	showBranch = true,
 }: {
 	className?: string;
 	leading?: string;
 	pr: SessionPRSummary;
+	showBranch?: boolean;
 }) {
-	const branchRange = prBranchRange(pr);
+	const branchRange = showBranch ? prBranchRange(pr) : undefined;
 	const hasDiff = hasDiffMetadata(pr);
-	const primary = [leading, branchRange, pr.author].filter(Boolean);
-	if (primary.length === 0 && !hasDiff) {
+	const primary = [leading, pr.author].filter(Boolean);
+	if (!branchRange && primary.length === 0 && !hasDiff) {
 		return null;
 	}
 	return (
-		<div className={cn("min-w-0 font-mono text-[10.5px] leading-4", className)}>
-			{primary.length > 0 ? <div className="truncate text-passive">{primary.join(" · ")}</div> : null}
-			{hasDiff ? <PRDiffMeta pr={pr} /> : null}
+		<div className={cn("flex flex-col gap-1.5 text-[11px] font-mono", className)}>
+			{branchRange ? (
+				<div className="truncate text-muted-foreground font-semibold text-[11.5px]">{branchRange}</div>
+			) : null}
+			{primary.length > 0 || hasDiff ? (
+				<div className="flex flex-wrap items-center gap-x-1.5 text-passive text-[10.5px]">
+					{primary.length > 0 ? <span>{primary.join(" / ")}</span> : null}
+					{primary.length > 0 && hasDiff ? <span>/</span> : null}
+					{hasDiff ? <PRDiffMeta pr={pr} /> : null}
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -39,7 +74,7 @@ function PRDiffMeta({ pr }: { pr: SessionPRSummary }) {
 	const parts: ReactNode[] = [];
 	if (pr.changedFiles > 0) {
 		parts.push(
-			<span className="inline-flex items-center gap-0.5 text-warning" key="files">
+			<span className="inline-flex items-center gap-0.5 text-warning font-semibold" key="files">
 				<ArrowUpDown aria-hidden="true" className="h-2.5 w-2.5 shrink-0" strokeWidth={2.2} />
 				{pr.changedFiles} {pluralize("file", pr.changedFiles)}
 			</span>,
@@ -47,23 +82,23 @@ function PRDiffMeta({ pr }: { pr: SessionPRSummary }) {
 	}
 	if (pr.additions > 0) {
 		parts.push(
-			<span className="text-success" key="additions">
+			<span className="text-success font-semibold" key="additions">
 				+{pr.additions}
 			</span>,
 		);
 	}
 	if (pr.deletions > 0) {
 		parts.push(
-			<span className="text-error" key="deletions">
+			<span className="text-error font-semibold" key="deletions">
 				-{pr.deletions}
 			</span>,
 		);
 	}
 	return (
-		<div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-muted-foreground">
+		<div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
 			{parts.map((part, index) => (
 				<Fragment key={index}>
-					{index > 0 ? <span className="text-passive">·</span> : null}
+					{index > 0 ? <span className="text-passive">/</span> : null}
 					{part}
 				</Fragment>
 			))}
@@ -90,30 +125,66 @@ export function PRSummaryParts({
 		<div
 			className={cn(
 				stacked
-					? "flex flex-col gap-1.5 font-mono text-[10.5px] leading-4"
+					? "flex flex-col gap-2.5 font-mono text-[10.5px] leading-4"
 					: "flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10.5px]",
 				className,
 			)}
 		>
 			{parts.map((part) => {
-				const links = part.links.slice(0, maxLinks);
+				const links = part.links
+					.filter((link) => {
+						if (link.label === "PR" && link.href === prBrowserUrl(pr)) {
+							return false;
+						}
+						if (
+							part.key === "merge" &&
+							["CI failing", "changes requested", "review required"].includes(link.label)
+						) {
+							return false;
+						}
+						return true;
+					})
+					.slice(0, maxLinks);
 				const overflowLabel = overflowPartLabel(
 					(part.linkTotal ?? part.links.length) - links.length,
 					part.overflowNoun,
 				);
+				const chip = statusChipStyles[part.tone] || statusChipStyles.neutral;
 				return (
-					<div key={part.key} className={cn("min-w-0", stacked ? "flex flex-col" : "inline-flex flex-wrap gap-x-1")}>
-						<div className="min-w-0 truncate">
-							<span className="text-passive">{part.label}</span>{" "}
-							<span className={cn("font-medium", toneClass[part.tone])}>{part.status}</span>
-							{part.summary ? <span className="text-passive"> · {part.summary}</span> : null}
+					<div key={part.key} className={cn("min-w-0", stacked ? "flex flex-col gap-1.5" : "inline-flex flex-wrap gap-x-1.5 items-center")}>
+						<div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+							<div
+								className={cn(
+									"inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[10.5px] font-bold border shadow-sm",
+									chip.bg,
+									chip.text,
+									chip.border
+								)}
+							>
+								{chip.icon}
+								<span>
+									<span className="opacity-75 font-normal">{part.label}</span>{" "}
+									<span>{part.status}</span>
+								</span>
+							</div>
+							{part.summary ? <span className="text-passive text-[11px] font-sans">/ {part.summary}</span> : null}
 						</div>
 						{links.length > 0 || overflowLabel ? (
-							<div className={cn("flex min-w-0 flex-wrap gap-x-1.5 gap-y-1", stacked ? "mt-0.5" : "")}>
+							<div className={cn("min-w-0", stacked ? "flex flex-col gap-1 mt-1 pl-3 border-l border-border/50 ml-1.5" : "flex flex-wrap gap-x-1.5 gap-y-1 items-center")}>
 								{links.map((link, index) => (
-									<SummaryLink interactive={interactiveLinks} key={`${part.key}-${index}-${link.label}`} link={link} />
+									<div key={`${part.key}-${index}-${link.label}`} className="flex items-center gap-1.5">
+										{!stacked && index > 0 && <span className="text-passive/40 select-none">/</span>}
+										{stacked && <span className="text-passive/50 select-none text-[10px]">↳</span>}
+										<SummaryLink interactive={interactiveLinks} link={link} />
+									</div>
 								))}
-								{overflowLabel ? <span className="text-passive">{overflowLabel}</span> : null}
+								{overflowLabel ? (
+									<div className="flex items-center gap-1.5">
+										{!stacked && <span className="text-passive/40 select-none">/</span>}
+										{stacked && <span className="text-passive/50 select-none text-[10px]">↳</span>}
+										<span className="text-passive">{overflowLabel}</span>
+									</div>
+								) : null}
 							</div>
 						) : null}
 					</div>
@@ -173,3 +244,5 @@ function hasDiffMetadata(pr: SessionPRSummary): boolean {
 function pluralize(noun: string, count: number): string {
 	return count === 1 ? noun : `${noun}s`;
 }
+
+

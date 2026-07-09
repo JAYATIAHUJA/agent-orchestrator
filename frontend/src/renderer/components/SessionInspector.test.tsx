@@ -163,7 +163,7 @@ describe("SessionInspector PR section", () => {
 
 	it("links each PR to its url", () => {
 		renderWithQuery(<SessionInspector session={session([pr(41, "open"), pr(42, "draft")])} />);
-		const links = screen.getAllByRole("link", { name: /Open/ });
+		const links = screen.getAllByRole("link", { name: /PR #/ });
 		expect(links.map((a) => a.getAttribute("href"))).toEqual([
 			"https://example.com/pr/41",
 			"https://example.com/pr/42",
@@ -241,37 +241,22 @@ describe("SessionInspector Activity section", () => {
 		expect(activitySection().queryByText("Input Needed")).not.toBeInTheDocument();
 	});
 
-	it.each([
-		["ci_failed", "CI Failed"],
-		["changes_requested", "Changes Requested"],
-	] as const)("renders %s as an SCM state in the current Activity row", (status, label) => {
+	it("keeps SCM state out of the current Activity row while surfacing it on the PR card", () => {
 		renderWithQuery(
 			<SessionInspector
-				session={session([], {
-					status,
+				session={session([pr(7, "open", { ci: "failing", review: "changes_requested" })], {
+					status: "ci_failed",
 					activity: { state: "idle", lastActivityAt: "2026-06-15T10:00:00Z" },
 				})}
 			/>,
 		);
 
 		const activityRow = activitySection().getByText("Idle").closest(".inspector-timeline__ev") as HTMLElement;
-		expect(within(activityRow).getByText(label)).toBeInTheDocument();
+		expect(within(activityRow).queryByText("Failing")).not.toBeInTheDocument();
+		expect(within(activityRow).queryByText("Changes requested")).not.toBeInTheDocument();
+		expect(screen.getByText("Failing")).toBeInTheDocument();
+		expect(screen.getByText("Changes requested")).toBeInTheDocument();
 	});
-
-	it("renders PR conflicts as an SCM state in the current Activity row", () => {
-		renderWithQuery(
-			<SessionInspector
-				session={session([pr(7, "open", { mergeability: "conflicting" })], {
-					status: "working",
-					activity: { state: "idle", lastActivityAt: "2026-06-15T10:00:00Z" },
-				})}
-			/>,
-		);
-
-		const activityRow = activitySection().getByText("Idle").closest(".inspector-timeline__ev") as HTMLElement;
-		expect(within(activityRow).getByText("Conflict")).toBeInTheDocument();
-	});
-
 	it("uses activity.lastActivityAt for the Activity timestamp", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
@@ -303,9 +288,6 @@ describe("SessionInspector Activity section", () => {
 		expect(activitySection().getByText(/Created worktree/)).toBeInTheDocument();
 		expect(activitySection().getByText("Opened")).toBeInTheDocument();
 		expect(activitySection().getByText("PR #7")).toBeInTheDocument();
-		const activityRow = activitySection().getByText("Idle").closest(".inspector-timeline__ev") as HTMLElement;
-		expect(within(activityRow).getByText("CI Failed")).toBeInTheDocument();
-		expect(within(activityRow).getByText("Changes Requested")).toBeInTheDocument();
 	});
 
 	it("orders timeline milestones around the combined current state row", () => {
@@ -508,3 +490,4 @@ describe("SessionInspector reviews tab", () => {
 		expect(await screen.findByText("No pull request opened yet.")).toBeInTheDocument();
 	});
 });
+
