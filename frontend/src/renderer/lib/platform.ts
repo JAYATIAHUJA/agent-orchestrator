@@ -23,9 +23,16 @@ export function isLinuxPlatform(): boolean {
 }
 
 export function usesFramedAppTopbar(): boolean {
+	// Keep this behind a helper even while every desktop platform uses the
+	// framed shell: it leaves the legacy full-width topbar path explicit while
+	// the cross-platform chrome settles, and keeps platform-specific tests at
+	// the behavior boundary instead of scattered through route/components code.
 	return true;
 }
 
 export function usesBoardActionsInFramedTopbar(): boolean {
+	// Paired with usesFramedAppTopbar so board actions can move back out of the
+	// framed header independently if a platform-specific shell regression turns
+	// up during desktop validation.
 	return true;
 }
