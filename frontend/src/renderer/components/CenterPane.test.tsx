@@ -56,10 +56,12 @@ describe("CenterPane toolbar session label", () => {
 		render(<CenterPane session={worker} shellTerminals={shells} theme="dark" daemonReady />);
 
 		const scrollRegion = document.querySelector(".overflow-x-auto");
-		expect(scrollRegion).toHaveClass("scrollbar-none", "flex-1");
+		expect(scrollRegion).toHaveClass("scrollbar-none", "min-w-flex-min", "flex-1");
 		for (const tab of screen.getAllByTitle("/tmp/ws")) {
-			expect(tab.parentElement).toHaveClass("min-w-16");
-			expect(tab.parentElement).not.toHaveClass("shrink-0");
+			expect(tab.parentElement).toHaveClass("min-w-shell-tab-min");
+			expect(tab.parentElement).not.toHaveClass("min-w-16", "shrink-0");
+			expect(tab).toHaveClass("min-w-flex-min");
+			expect(tab).not.toHaveClass("min-w-0");
 		}
 		// jsdom reports no overflow, so the indicator stays mounted but disabled to preserve focus.
 		expect(screen.getByRole("button", { name: "Scroll tabs right" })).toBeDisabled();

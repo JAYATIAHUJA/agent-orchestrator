@@ -58,7 +58,7 @@ export function ShellTerminalsView() {
 				</button>
 				{/* Tabs shrink and truncate down to a minimum width; beyond that the
 				    strip scrolls and edge chevrons reveal the overflow. */}
-				<div ref={tabsOverflow.ref} className="scrollbar-none flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+				<div ref={tabsOverflow.ref} className="scrollbar-none flex min-w-flex-min flex-1 items-center gap-3 overflow-x-auto">
 					{shellTerminals.map((shell) => {
 						const isActive = shell.handleId === active?.handleId;
 						return (
@@ -138,7 +138,7 @@ function ShellTab({
 	return (
 		<span
 			className={cn(
-				"group inline-flex min-w-16 items-center gap-1 rounded-md px-2 py-1 transition-colors",
+				"group inline-flex min-w-shell-tab-min items-center gap-1 rounded-md px-2 py-1 transition-colors",
 				isActive ? "bg-interactive-active" : "hover:bg-interactive-hover/60",
 			)}
 		>
@@ -146,7 +146,7 @@ function ShellTab({
 				ref={ref}
 				aria-current={isActive}
 				className={cn(
-					"min-w-0 max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
+					"min-w-flex-min max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
 					isActive ? "text-foreground" : "text-passive hover:text-foreground",
 				)}
 				onClick={onSelect}

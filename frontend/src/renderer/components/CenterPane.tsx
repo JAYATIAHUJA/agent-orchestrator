@@ -115,11 +115,11 @@ export function CenterPane({
 	return (
 		<div
 			ref={paneRef}
-			className="terminal-pane-frame flex h-full min-h-0 min-w-0 flex-col"
+			className="terminal-pane-frame flex h-full min-h-0 min-w-flex-min flex-col"
 			onWheelCapture={handleWheelZoom}
 		>
 			<div className="flex h-inspector-tabs shrink-0 items-center border-b border-border px-5">
-				<div className="flex min-w-0 flex-1 items-center gap-3">
+				<div className="flex min-w-flex-min flex-1 items-center gap-3">
 					<span className="shrink-0 font-mono text-caption font-semibold uppercase tracking-wide-lg text-muted-foreground">
 						TERMINAL
 					</span>
@@ -141,7 +141,7 @@ export function CenterPane({
 					    renders as the plain session label it has always been. Tabs shrink
 					    and truncate like browser tabs down to a minimum width; beyond
 					    that the strip scrolls and edge chevrons reveal the overflow. */}
-					<div ref={tabsOverflow.ref} className="scrollbar-none flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+					<div ref={tabsOverflow.ref} className="scrollbar-none flex min-w-flex-min flex-1 items-center gap-3 overflow-x-auto">
 						<SessionPaneTab
 							isActive={target.kind !== "shell"}
 							label={!session ? "No session" : isOrchestratorSession(session) ? "Orchestrator" : session.title}
@@ -272,7 +272,7 @@ function SessionPaneTab({ label, isActive, onSelect }: SessionPaneTabProps) {
 	return (
 		<span
 			className={cn(
-				"inline-flex min-w-16 items-center rounded-md px-2 py-1 transition-colors",
+				"inline-flex min-w-shell-tab-min items-center rounded-md px-2 py-1 transition-colors",
 				isActive ? "bg-interactive-active" : "hover:bg-interactive-hover/60",
 			)}
 		>
@@ -280,7 +280,7 @@ function SessionPaneTab({ label, isActive, onSelect }: SessionPaneTabProps) {
 				ref={ref}
 				aria-current={isActive}
 				className={cn(
-					"min-w-0 max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
+					"min-w-flex-min max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
 					isActive ? "text-foreground" : "text-passive/60 hover:text-passive",
 				)}
 				onClick={onSelect}
@@ -309,7 +309,7 @@ function ShellTerminalTab({ shell, isActive, onSelect, onClose }: ShellTerminalT
 	return (
 		<span
 			className={cn(
-				"group inline-flex min-w-16 items-center gap-1 rounded-md px-2 py-1 transition-colors",
+				"group inline-flex min-w-shell-tab-min items-center gap-1 rounded-md px-2 py-1 transition-colors",
 				isActive ? "bg-interactive-active" : "hover:bg-interactive-hover/60",
 			)}
 		>
@@ -317,7 +317,7 @@ function ShellTerminalTab({ shell, isActive, onSelect, onClose }: ShellTerminalT
 				ref={ref}
 				aria-current={isActive}
 				className={cn(
-					"min-w-0 max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
+					"min-w-flex-min max-w-shell-tab-max truncate font-mono text-control font-semibold transition-colors",
 					isActive ? "text-foreground" : "text-passive hover:text-foreground",
 				)}
 				onClick={onSelect}
