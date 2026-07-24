@@ -22,6 +22,7 @@ type ConfirmDialogProps = {
 	error?: string | null;
 	onConfirm: () => void;
 	onOpenChange: (open: boolean) => void;
+	size?: "default" | "sm";
 };
 
 // Shared confirmation modal styled exactly like the settings dialogs
@@ -38,6 +39,7 @@ export function ConfirmDialog({
 	error,
 	onConfirm,
 	onOpenChange,
+	size: _size,
 }: ConfirmDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
