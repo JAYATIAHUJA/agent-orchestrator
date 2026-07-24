@@ -211,8 +211,8 @@
 	--size-control-board-sm: 30px;
 	--size-control-board: 36px;
 	--size-table-head: var(--space-10);
-	--size-toolbar: 44px;
-	--size-inspector-tabs: 36px;
+	--size-toolbar: 56px;
+	--size-inspector-tabs: 42px;
 	--size-row-md: 52px;
 	--size-browser-url: 29px;
 	--size-browser-min: 320px;
