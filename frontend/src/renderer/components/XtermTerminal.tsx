@@ -642,10 +642,10 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			}
 		};
 		// ResizeObserver fires for every intermediate box during native fullscreen,
-		// sidebar drags and other animated application layout. Fitting on every
-		// callback repeatedly reallocates xterm's WebGL surface, so those changes
-		// normally settle through the debounce below. A short, explicit live-resize
-		// marker lets controlled layout animations keep xterm visually in step.
+		// sidebar drags and animated application layout. Fitting on every callback
+		// repeatedly reflows the grid and reallocates xterm's WebGL surface, so all
+		// visible changes settle through the quiet window below. Hidden activation
+		// preparation retains a cap so its cover cannot wait forever.
 		const FIT_QUIET_MS = 120;
 		const FIT_CAP_MS = 500;
 		let fitQuietTimer: ReturnType<typeof setTimeout> | null = null;
@@ -682,7 +682,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			if (onSettled) fitSettledListeners.add(onSettled);
 			if (fitQuietTimer !== null) clearTimeout(fitQuietTimer);
 			fitQuietTimer = setTimeout(flushScheduledFit, FIT_QUIET_MS);
-			if (fitCapTimer === null) fitCapTimer = setTimeout(flushScheduledFit, FIT_CAP_MS);
+			if (allowHidden && fitCapTimer === null) fitCapTimer = setTimeout(flushScheduledFit, FIT_CAP_MS);
 		};
 		// While activation preparation is pending, observer/window events must keep
 		// extending the same quiet window even though the container is intentionally
@@ -702,13 +702,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 		if (document.fonts?.ready) {
 			void document.fonts.ready.then(() => scheduleStableFit());
 		}
-		const observer = new ResizeObserver(() => {
-			if (host.closest('[data-terminal-live-resize="true"]')) {
-				fitTerminal();
-				return;
-			}
-			scheduleVisibleFit();
-		});
+		const observer = new ResizeObserver(scheduleVisibleFit);
 		observer.observe(host);
 
 		// Recovery re-fit that does NOT depend on the host box changing size.

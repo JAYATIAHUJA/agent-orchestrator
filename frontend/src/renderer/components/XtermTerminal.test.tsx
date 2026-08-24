@@ -166,7 +166,8 @@ describe("XtermTerminal", () => {
 		window.ao!.terminal.onFontSizeShortcut = () => () => undefined;
 	});
 
-	it("fits on each observed frame while an ancestor requests live terminal resizing", () => {
+	it("waits for sustained container resizing to settle before fitting once", () => {
+		vi.useFakeTimers();
 		const callbacks: ResizeObserverCallback[] = [];
 		const originalResizeObserver = window.ResizeObserver;
 		class CapturingResizeObserver implements ResizeObserver {
@@ -183,17 +184,25 @@ describe("XtermTerminal", () => {
 			value: CapturingResizeObserver,
 		});
 		try {
-			render(
-				<div data-terminal-live-resize="true">
-					<XtermTerminal theme="dark" />
-				</div>,
-			);
+			render(<XtermTerminal theme="dark" />);
+			act(() => vi.runAllTimers());
 			state.fit.mockClear();
 
-			act(() => callbacks.at(-1)?.([], {} as ResizeObserver));
+			act(() => {
+				for (let frame = 0; frame < 10; frame += 1) {
+					callbacks.at(-1)?.([], {} as ResizeObserver);
+					if (frame < 9) vi.advanceTimersByTime(60);
+				}
+			});
+			expect(state.fit).not.toHaveBeenCalled();
 
+			act(() => vi.advanceTimersByTime(119));
+			expect(state.fit).not.toHaveBeenCalled();
+
+			act(() => vi.advanceTimersByTime(1));
 			expect(state.fit).toHaveBeenCalledTimes(1);
 		} finally {
+			vi.useRealTimers();
 			Object.defineProperty(window, "ResizeObserver", {
 				configurable: true,
 				writable: true,

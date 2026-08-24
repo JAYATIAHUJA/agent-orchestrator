@@ -253,7 +253,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const { daemonStatus } = useShell();
 	const previewBaselineRef = useRef<{ sessionId: string; key: string } | null>(null);
 	const sessionSplitRef = useRef<HTMLDivElement | null>(null);
-	const terminalLiveResizeTimerRef = useRef<number | null>(null);
+	const inspectorTransitionTimerRef = useRef<number | null>(null);
 	const initializedInspectorSessionIdRef = useRef<string | null>(null);
 	const [inspectorSettledClosed, setInspectorSettledClosed] = useState(!isInspectorOpen);
 	const inspectorPanelVisible = isInspectorOpen || !inspectorSettledClosed;
@@ -266,36 +266,36 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const browserPoppedOut = browserPopOutState.sessionId === sessionId && browserPopOutState.poppedOut;
 	const [interfaceSwitchDialogOpen, setInterfaceSwitchDialogOpen] = useState(false);
 	const isNativeFullScreen = useWindowFullScreen();
-	const stopTerminalLiveResize = useCallback(() => {
-		if (terminalLiveResizeTimerRef.current !== null) {
-			window.clearTimeout(terminalLiveResizeTimerRef.current);
-			terminalLiveResizeTimerRef.current = null;
+	const stopInspectorTransition = useCallback(() => {
+		if (inspectorTransitionTimerRef.current !== null) {
+			window.clearTimeout(inspectorTransitionTimerRef.current);
+			inspectorTransitionTimerRef.current = null;
 		}
-		sessionSplitRef.current?.removeAttribute("data-terminal-live-resize");
+		sessionSplitRef.current?.removeAttribute("data-inspector-transition");
 		sessionSplitRef.current?.removeAttribute("data-inspector-label-mode");
 		sessionSplitRef.current?.removeAttribute("data-topbar-secondary-label-mode");
 	}, []);
-	const startTerminalLiveResize = useCallback(
+	const startInspectorTransition = useCallback(
 		(labelMode: "compact" | "expanded", topbarLabelMode: "compact" | "expanded") => {
 			const split = sessionSplitRef.current;
 			if (!split) return;
-			if (terminalLiveResizeTimerRef.current !== null) {
-				window.clearTimeout(terminalLiveResizeTimerRef.current);
+			if (inspectorTransitionTimerRef.current !== null) {
+				window.clearTimeout(inspectorTransitionTimerRef.current);
 			}
-			split.setAttribute("data-terminal-live-resize", "true");
+			split.setAttribute("data-inspector-transition", "true");
 			split.setAttribute("data-inspector-label-mode", labelMode);
 			split.setAttribute("data-topbar-secondary-label-mode", topbarLabelMode);
-			terminalLiveResizeTimerRef.current = window.setTimeout(() => {
-				split.removeAttribute("data-terminal-live-resize");
+			inspectorTransitionTimerRef.current = window.setTimeout(() => {
+				split.removeAttribute("data-inspector-transition");
 				split.removeAttribute("data-inspector-label-mode");
 				split.removeAttribute("data-topbar-secondary-label-mode");
-				terminalLiveResizeTimerRef.current = null;
+				inspectorTransitionTimerRef.current = null;
 			}, INSPECTOR_SPRING_MS);
 		},
 		[],
 	);
 
-	useEffect(() => stopTerminalLiveResize, [stopTerminalLiveResize]);
+	useEffect(() => stopInspectorTransition, [stopInspectorTransition]);
 
 	const session = workspaces.flatMap((workspace) => workspace.sessions).find((s) => s.id === sessionId);
 	const interfaceSwitch = useSessionInterfaceTransition(session?.id);
@@ -782,13 +782,13 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	useLayoutEffect(() => {
 		if (!hasInspector) {
 			setInspectorSettledClosed(true);
-			stopTerminalLiveResize();
+			stopInspectorTransition();
 			return;
 		}
 		if (!inspectorMotionReadyRef.current) {
 			setInspectorSettledClosed(!isInspectorOpen);
 		}
-	}, [hasInspector, isInspectorOpen, stopTerminalLiveResize]);
+	}, [hasInspector, isInspectorOpen, stopInspectorTransition]);
 	useEffect(() => {
 		if (!hasInspector || !inspectorMotionReadyRef.current) return;
 		if (isInspectorOpen) {
@@ -796,15 +796,15 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			const groupWidth = sessionSplitRef.current?.clientWidth || window.innerWidth;
 			const availableWidth = Math.max(0, groupWidth - INSPECTOR_SEPARATOR_RESERVE_PX);
 			const targetInspectorWidth = Number.parseFloat(initialInspectorSize(availableWidth));
-			startTerminalLiveResize(
+			startInspectorTransition(
 				targetInspectorWidth <= INSPECTOR_COMPACT_MAX_PX ? "compact" : "expanded",
 				topbarSecondaryLabelMode(Math.max(0, availableWidth - targetInspectorWidth)),
 			);
 			return;
 		}
 		const groupWidth = sessionSplitRef.current?.clientWidth || window.innerWidth;
-		startTerminalLiveResize("expanded", topbarSecondaryLabelMode(groupWidth));
-	}, [hasInspector, isInspectorOpen, startTerminalLiveResize]);
+		startInspectorTransition("expanded", topbarSecondaryLabelMode(groupWidth));
+	}, [hasInspector, isInspectorOpen, startInspectorTransition]);
 	useEffect(() => {
 		if (!hasInspector) {
 			inspectorMotionReadyRef.current = false;
