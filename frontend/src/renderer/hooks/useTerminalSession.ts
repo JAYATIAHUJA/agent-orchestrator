@@ -389,6 +389,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		let resizeRepaintPending = false;
 		let resizeRepaintQuietTimer: ReturnType<typeof setTimeout> | null = null;
 		let resizeRepaintCapTimer: ReturnType<typeof setTimeout> | null = null;
+		let onResizeRepaintSettled: (() => void) | null = null;
 
 		const clearResizeRepaintTimers = () => {
 			if (resizeRepaintQuietTimer !== null) {
@@ -402,9 +403,16 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		};
 
 		const flushLiveOutput = () => {
+			const wasResizeRepaintPending = resizeRepaintPending;
 			clearResizeRepaintTimers();
 			resizeRepaintPending = false;
-			if (liveWriteBytes === 0) return;
+			const settleResizeRepaint = () => {
+				if (wasResizeRepaintPending) onResizeRepaintSettled?.();
+			};
+			if (liveWriteBytes === 0) {
+				settleResizeRepaint();
+				return;
+			}
 			let output: Uint8Array;
 			if (liveWriteChunks.length === 1) {
 				output = liveWriteChunks[0]!;
@@ -419,7 +427,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			liveWriteChunks = [];
 			liveWriteBytes = 0;
 			diag(`resize-repaint flush ${output.length}B handle=${handle}`);
-			terminal.write(output);
+			terminal.write(output, settleResizeRepaint);
 		};
 		const queueLiveOutput = (bytes: Uint8Array) => {
 			// Outside the post-resize window this is a plain passthrough — ordering and
@@ -748,13 +756,14 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			else revealReplayTail();
 			mux.sendInput(handle, data);
 		});
-		// Xterm follows the host locally on every observed frame. Forward its latest
-		// grid to the PTY on a leading-and-trailing throttle as well, so wrapped text
-		// and full-screen TUIs keep changing throughout the drag. The cadence keeps
-		// superseded intermediate grids out of the mux while the repaint gate above
-		// makes each ConPTY clear-and-redraw burst reach xterm atomically.
+		// Xterm follows the host locally on every observed frame. ConPTY repaint
+		// streams can take longer than the resize cadence, though, so allow only one
+		// through the mux at a time and retain the latest superseding grid. Once the
+		// complete burst has been parsed by xterm, publish that latest grid. This
+		// keeps the drag live without interleaving two clear-and-redraw transactions.
 		let lastResizePublishAt = performance.now();
 		let pendingGrid: { cols: number; rows: number } | null = null;
+		let resizeInFlight = false;
 		const publishGrid = (cols: number, rows: number) => {
 			if (!isCurrentAttachment(generation, handle, mux)) return;
 			if (optionsRef.current.isVisible === false) return;
@@ -762,6 +771,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			if (published?.cols === cols && published.rows === rows) return;
 			diag(`pty-resize send ${cols}x${rows} handle=${handle}`);
 			lastResizePublishAt = performance.now();
+			resizeInFlight = true;
 			beginResizeRepaint();
 			mux.resize(handle, cols, rows);
 			r.lastPublishedGrid = { cols, rows };
@@ -771,6 +781,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 				clearTimeout(r.resizeTimer);
 				r.resizeTimer = null;
 			}
+			if (resizeInFlight) return;
 			const grid = pendingGrid;
 			pendingGrid = null;
 			if (grid) publishGrid(grid.cols, grid.rows);
@@ -779,6 +790,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			if (!isCurrentAttachment(generation, handle, mux)) return;
 			if (optionsRef.current.isVisible === false) return;
 			pendingGrid = { cols, rows };
+			if (resizeInFlight) return;
 			const remaining = PTY_RESIZE_INTERVAL_MS - (performance.now() - lastResizePublishAt);
 			if (remaining <= 0) {
 				flushPendingGrid();
@@ -790,6 +802,21 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 				flushPendingGrid();
 			}, remaining);
 		});
+		onResizeRepaintSettled = () => {
+			if (!isCurrentAttachment(generation, handle, mux)) return;
+			resizeInFlight = false;
+			if (!pendingGrid || optionsRef.current.isVisible === false) return;
+			const remaining = PTY_RESIZE_INTERVAL_MS - (performance.now() - lastResizePublishAt);
+			if (remaining <= 0) {
+				flushPendingGrid();
+				return;
+			}
+			if (r.resizeTimer) return;
+			r.resizeTimer = setTimeout(() => {
+				r.resizeTimer = null;
+				flushPendingGrid();
+			}, remaining);
+		};
 		const flushResizeOnPointerRelease = () => flushPendingGrid();
 		window.addEventListener("pointerup", flushResizeOnPointerRelease, true);
 		window.addEventListener("pointercancel", flushResizeOnPointerRelease, true);

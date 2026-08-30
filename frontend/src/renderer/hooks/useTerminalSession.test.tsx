@@ -232,10 +232,11 @@ describe("useTerminalSession", () => {
 	});
 
 	// ConPTY answers every resize with a full viewport repaint, so PTY resizes
-	// use a latest-value throttle: content updates throughout the drag, rapid
-	// superseded grids are skipped, and pointer release flushes the final grid.
+	// Use a single-flight latest-value scheduler: content updates throughout the
+	// drag, rapid superseded grids are skipped, and pointer release retains the
+	// final grid for the next completed repaint slot.
 	it("throttles superseded PTY grids while publishing during drag and on release", () => {
-		const { terminal, muxes } = setup();
+		const { terminal, muxes } = setup({ coverInitialReplay: false });
 		act(() => muxes[0].emitOpened("handle-1"));
 		const initialResizes = muxes[0].resizes.length;
 
@@ -243,13 +244,15 @@ describe("useTerminalSession", () => {
 		try {
 			terminal.emitResize(110, 30);
 			act(() => void vi.advanceTimersByTime(100));
+			act(() => muxes[0].emitData("handle-1", "frame 110"));
+			act(() => void vi.advanceTimersByTime(80));
 
 			// These two changes share the next throttle window; only the latest
 			// grid should cross the mux.
 			terminal.emitResize(105, 30);
-			act(() => void vi.advanceTimersByTime(30));
+			act(() => void vi.advanceTimersByTime(10));
 			terminal.emitResize(100, 30);
-			act(() => void vi.advanceTimersByTime(70));
+			act(() => void vi.advanceTimersByTime(10));
 
 			// A second grid has reached the PTY while the drag is still active.
 			expect(muxes[0].resizes.slice(initialResizes)).toEqual([
@@ -259,6 +262,8 @@ describe("useTerminalSession", () => {
 
 			terminal.emitResize(90, 30);
 			window.dispatchEvent(new PointerEvent("pointerup"));
+			act(() => muxes[0].emitData("handle-1", "frame 100"));
+			act(() => void vi.advanceTimersByTime(100));
 		} finally {
 			document.body.classList.remove("is-resizing-x");
 		}
@@ -272,7 +277,7 @@ describe("useTerminalSession", () => {
 
 	it("publishes changing PTY grids continuously during a Windows layout drag", () => {
 		vi.spyOn(window.navigator, "platform", "get").mockReturnValue("Win32");
-		const { terminal, muxes } = setup();
+		const { terminal, muxes } = setup({ coverInitialReplay: false });
 		act(() => muxes[0].emitOpened("handle-1"));
 		const initialResizes = muxes[0].resizes.length;
 
@@ -281,6 +286,8 @@ describe("useTerminalSession", () => {
 			terminal.emitResize(110, 30);
 			act(() => void vi.advanceTimersByTime(100));
 			expect(muxes[0].resizes.slice(initialResizes)).toEqual([["handle-1", 110, 30]]);
+			act(() => muxes[0].emitData("handle-1", "frame 110"));
+			act(() => void vi.advanceTimersByTime(80));
 
 			terminal.emitResize(100, 30);
 			act(() => void vi.advanceTimersByTime(100));
@@ -288,6 +295,8 @@ describe("useTerminalSession", () => {
 				["handle-1", 110, 30],
 				["handle-1", 100, 30],
 			]);
+			act(() => muxes[0].emitData("handle-1", "frame 100"));
+			act(() => void vi.advanceTimersByTime(80));
 
 			terminal.emitResize(90, 30);
 			act(() => void vi.advanceTimersByTime(100));
@@ -299,6 +308,31 @@ describe("useTerminalSession", () => {
 		} finally {
 			document.body.classList.remove("is-resizing-x");
 		}
+	});
+
+	it("keeps only the latest Windows grid pending until the previous repaint is complete", () => {
+		vi.spyOn(window.navigator, "platform", "get").mockReturnValue("Win32");
+		const { terminal, muxes } = setup({ coverInitialReplay: false });
+		act(() => muxes[0].emitOpened("handle-1"));
+		const initialResizes = muxes[0].resizes.length;
+
+		terminal.emitResize(110, 30);
+		act(() => void vi.advanceTimersByTime(100));
+		expect(muxes[0].resizes.slice(initialResizes)).toEqual([["handle-1", 110, 30]]);
+
+		// The first ConPTY clear-and-redraw is still in flight. New geometry is
+		// retained, but must not start a second overlapping repaint stream.
+		terminal.emitResize(105, 30);
+		terminal.emitResize(100, 30);
+		act(() => void vi.advanceTimersByTime(100));
+		expect(muxes[0].resizes.slice(initialResizes)).toEqual([["handle-1", 110, 30]]);
+
+		act(() => muxes[0].emitData("handle-1", "clear + complete frame"));
+		act(() => void vi.advanceTimersByTime(80));
+		expect(muxes[0].resizes.slice(initialResizes)).toEqual([
+			["handle-1", 110, 30],
+			["handle-1", 100, 30],
+		]);
 	});
 
 	it("forwards every explicit input source after the attachment opens", () => {

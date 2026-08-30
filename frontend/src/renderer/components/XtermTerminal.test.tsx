@@ -17,6 +17,8 @@ const state = vi.hoisted(() => ({
 		resultListeners: Set<(results: { resultCount: number; resultIndex: number }) => void>;
 	},
 	lastTerminal: null as null | {
+		cols: number;
+		rows: number;
 		keyHandler?: (event: KeyboardEvent) => boolean;
 		wheelHandler?: (event: WheelEvent) => boolean;
 		selection: string;
