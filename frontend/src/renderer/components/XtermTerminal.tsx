@@ -720,20 +720,33 @@ export function XtermTerminal(props: XtermTerminalProps) {
 		shell.addEventListener("copy", copyInput);
 		window.addEventListener("keydown", copyShortcut, true);
 
+		const fitAndPreserveViewport = (label: "fit" | "debounced-fit") => {
+			const buffer = term.buffer.active;
+			const wasPinnedToBottom = buffer.viewportY >= buffer.baseY;
+			const savedViewportY = buffer.viewportY;
+			const before = `${term.cols}x${term.rows}`;
+			fit.fit();
+			if (`${term.cols}x${term.rows}` === before) return;
+
+			// A column shrink reflows the normal buffer and can move viewportY while
+			// ConPTY redraws the active screen. Restore the user's logical position,
+			// then synchronously repaint the newly sized canvas so no stale rows show.
+			if (wasPinnedToBottom) {
+				term.scrollToBottom();
+			} else {
+				const targetY = Math.min(savedViewportY, term.buffer.active.baseY);
+				if (term.buffer.active.viewportY !== targetY) term.scrollToLine(targetY);
+			}
+			term.refresh(0, Math.max(0, term.rows - 1));
+			diag(`${label} ${before} -> ${term.cols}x${term.rows}`);
+		};
+
 		const fitTerminal = () => {
 			// Parked terminals keep their last measured box and continue parsing
 			// output, but must not refit or emit PTY resizes while hidden.
 			if (callbacksRef.current.isVisible === false) return;
 			try {
-				const before = `${term.cols}x${term.rows}`;
-				fit.fit();
-				// Sync render ONLY when the grid actually changed: that is the only
-				// case where the canvas was resized (and cleared). Forcing a full
-				// synchronous viewport render on every no-op fit doubles render work
-				// on every observed frame of a drag — measurable lag on iGPUs.
-				if (`${term.cols}x${term.rows}` !== before) {
-					diag(`fit ${before} -> ${term.cols}x${term.rows}`);
-				}
+				fitAndPreserveViewport("fit");
 			} catch {
 				// Container momentarily has no size (hidden/unmounting) — a later
 				// trigger retries.
@@ -770,11 +783,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			}
 			if (fitAllowsHidden || callbacksRef.current.isVisible !== false) {
 				try {
-					const before = `${term.cols}x${term.rows}`;
-					fit.fit();
-					if (`${term.cols}x${term.rows}` !== before) {
-						diag(`debounced-fit ${before} -> ${term.cols}x${term.rows} hidden=${fitAllowsHidden}`);
-					}
+					fitAndPreserveViewport("debounced-fit");
 				} catch {
 					// The next observer/window event retries if the host is transiently
 					// unmeasurable (for example while entering fullscreen).

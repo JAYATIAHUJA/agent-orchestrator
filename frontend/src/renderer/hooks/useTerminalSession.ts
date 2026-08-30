@@ -108,31 +108,11 @@ const LIVE_WRITE_MAX_BYTES = 1024 * 1024;
 // keystroke echo for no benefit).
 const RESIZE_REPAINT_QUIET_MS = 80;
 const RESIZE_REPAINT_CAP_MS = 300;
-const PTY_RESIZE_QUIET_MS = 75;
-// While body.is-resizing-x marks an active layout drag, a due PTY resize
-// re-checks on this interval instead of publishing (see publishGrid).
-const LAYOUT_DRAG_RECHECK_MS = 100;
-// Minimum spacing between PTY resizes while a gesture is active. Each publish
-// costs a full ConPTY viewport repaint on Windows, so pace them to pauses; the
-// gesture's final grid always lands right after release via the recheck loop.
-const GESTURE_PUBLISH_INTERVAL_MS = 350;
-// An OS window-edge drag streams window resize events with no pointer signal
-// the renderer can observe, so unlike separator drags there is no marker class.
-// Treat the window as mid-gesture until its resize events go quiet — otherwise
-// each mid-drag pause publishes a grid and ConPTY answers with a full repaint.
-const WINDOW_RESIZE_GESTURE_QUIET_MS = 250;
-let lastWindowResizeAt = Number.NEGATIVE_INFINITY;
-if (typeof window !== "undefined") {
-	window.addEventListener("resize", () => {
-		lastWindowResizeAt = performance.now();
-	});
-}
-function resizeGestureActive(): boolean {
-	return (
-		document.body.classList.contains("is-resizing-x") ||
-		performance.now() - lastWindowResizeAt < WINDOW_RESIZE_GESTURE_QUIET_MS
-	);
-}
+// Publish the latest xterm grid throughout a drag instead of waiting for a
+// trailing quiet period. This cadence keeps PTY content visibly tracking the
+// pane while leaving ConPTY's atomic repaint gate time to land each viewport.
+// Pointer release flushes the final grid immediately.
+const PTY_RESIZE_INTERVAL_MS = 100;
 // Initial-replay gate. On attach the runtime replays the pane's state, and the
 // daemon pumps it in 32KB reads (attachment.go copyOut) — so the renderer gets
 // N WebSocket frames, N `write()` calls, and N separate event-loop turns. xterm
@@ -768,54 +748,56 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			else revealReplayTail();
 			mux.sendInput(handle, data);
 		});
-		// The DOM grid follows the host every frame, while the PTY receives only the
-		// final settled size — and never an intermediate one during a layout drag.
-		// ConPTY (the Windows PTY) answers EVERY resize with a full clear-and-
-		// repaint of its viewport, so letting even debounced mid-drag grids through
-		// makes the terminal visibly "reload" once per pause in the drag. Unix PTYs
-		// only deliver SIGWINCH, but one final resize is equally correct there.
-		// useResizable marks the whole gesture with body.is-resizing-x (sidebar and
-		// inspector drags alike); while it is present the publish re-checks on a
-		// short interval and the final grid goes out right after release.
-		// Mid-gesture publishes are paced, not blocked outright: a fully held PTY
-		// leaves the TUI's old-size frame being cropped/blank-padded by the live
-		// local fits for the whole drag, then one big late repaint — which reads
-		// as the terminal reloading. Letting a settled grid through every
-		// GESTURE_PUBLISH_INTERVAL_MS refreshes real content at every pause of a
-		// slow drag (each repaint lands atomically via the gate below), while a
-		// fast drag still produces only the final publish.
-		let lastGesturePublishAt = Number.NEGATIVE_INFINITY;
+		// Xterm follows the host locally on every observed frame. Forward its latest
+		// grid to the PTY on a leading-and-trailing throttle as well, so wrapped text
+		// and full-screen TUIs keep changing throughout the drag. The cadence keeps
+		// superseded intermediate grids out of the mux while the repaint gate above
+		// makes each ConPTY clear-and-redraw burst reach xterm atomically.
+		let lastResizePublishAt = performance.now();
+		let pendingGrid: { cols: number; rows: number } | null = null;
 		const publishGrid = (cols: number, rows: number) => {
 			if (!isCurrentAttachment(generation, handle, mux)) return;
 			if (optionsRef.current.isVisible === false) return;
-			if (resizeGestureActive() && performance.now() - lastGesturePublishAt < GESTURE_PUBLISH_INTERVAL_MS) {
-				diag(`pty-resize paced mid-gesture ${cols}x${rows} handle=${handle}`);
-				r.resizeTimer = setTimeout(() => {
-					r.resizeTimer = null;
-					publishGrid(cols, rows);
-				}, LAYOUT_DRAG_RECHECK_MS);
-				return;
-			}
 			const published = r.lastPublishedGrid;
 			if (published?.cols === cols && published.rows === rows) return;
 			diag(`pty-resize send ${cols}x${rows} handle=${handle}`);
-			lastGesturePublishAt = performance.now();
+			lastResizePublishAt = performance.now();
 			beginResizeRepaint();
 			mux.resize(handle, cols, rows);
 			r.lastPublishedGrid = { cols, rows };
 		};
+		const flushPendingGrid = () => {
+			if (r.resizeTimer) {
+				clearTimeout(r.resizeTimer);
+				r.resizeTimer = null;
+			}
+			const grid = pendingGrid;
+			pendingGrid = null;
+			if (grid) publishGrid(grid.cols, grid.rows);
+		};
 		const resize = terminal.onResize(({ cols, rows }) => {
 			if (!isCurrentAttachment(generation, handle, mux)) return;
 			if (optionsRef.current.isVisible === false) return;
-			if (r.resizeTimer) clearTimeout(r.resizeTimer);
+			pendingGrid = { cols, rows };
+			const remaining = PTY_RESIZE_INTERVAL_MS - (performance.now() - lastResizePublishAt);
+			if (remaining <= 0) {
+				flushPendingGrid();
+				return;
+			}
+			if (r.resizeTimer) return;
 			r.resizeTimer = setTimeout(() => {
 				r.resizeTimer = null;
-				publishGrid(cols, rows);
-			}, PTY_RESIZE_QUIET_MS);
+				flushPendingGrid();
+			}, remaining);
 		});
+		const flushResizeOnPointerRelease = () => flushPendingGrid();
+		window.addEventListener("pointerup", flushResizeOnPointerRelease, true);
+		window.addEventListener("pointercancel", flushResizeOnPointerRelease, true);
 		r.disposers.push(
 			() => input.dispose(),
 			() => resize.dispose(),
+			() => window.removeEventListener("pointerup", flushResizeOnPointerRelease, true),
+			() => window.removeEventListener("pointercancel", flushResizeOnPointerRelease, true),
 		);
 
 		// Open the replay gate before the pane can produce any output. It cannot

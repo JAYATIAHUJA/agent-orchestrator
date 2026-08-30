@@ -315,6 +315,46 @@ describe("XtermTerminal", () => {
 			});
 		});
 
+		it("keeps a bottom-pinned viewport pinned while shrinking columns", () => {
+			withDragHarness(0, (observe) => {
+				const terminal = state.lastTerminal!;
+				terminal.buffer.active.baseY = 50;
+				terminal.buffer.active.viewportY = 50;
+				terminal.scrollToBottom.mockClear();
+				terminal.refresh.mockClear();
+				state.fit.mockImplementationOnce(() => {
+					terminal.cols = 60;
+					terminal.buffer.active.baseY = 80;
+					terminal.buffer.active.viewportY = 70;
+				});
+
+				act(() => observe?.([], {} as ResizeObserver));
+
+				expect(terminal.scrollToBottom).toHaveBeenCalledTimes(1);
+				expect(terminal.refresh).toHaveBeenCalledWith(0, terminal.rows - 1);
+			});
+		});
+
+		it("restores a scrolled viewport while shrinking columns", () => {
+			withDragHarness(0, (observe) => {
+				const terminal = state.lastTerminal!;
+				terminal.buffer.active.baseY = 50;
+				terminal.buffer.active.viewportY = 20;
+				terminal.scrollToLine.mockClear();
+				terminal.refresh.mockClear();
+				state.fit.mockImplementationOnce(() => {
+					terminal.cols = 60;
+					terminal.buffer.active.baseY = 80;
+					terminal.buffer.active.viewportY = 45;
+				});
+
+				act(() => observe?.([], {} as ResizeObserver));
+
+				expect(terminal.scrollToLine).toHaveBeenCalledWith(20);
+				expect(terminal.refresh).toHaveBeenCalledWith(0, terminal.rows - 1);
+			});
+		});
+
 		it("collapses the burst into one fit flushed on pointer release when scrollback is large", () => {
 			withDragHarness(5_000, (observe) => {
 				for (let frame = 0; frame < 10; frame++) {

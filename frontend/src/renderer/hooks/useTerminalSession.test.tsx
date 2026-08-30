@@ -232,34 +232,73 @@ describe("useTerminalSession", () => {
 	});
 
 	// ConPTY answers every resize with a full viewport repaint, so PTY resizes
-	// are PACED during a layout drag (body.is-resizing-x): the first settled
-	// grid goes out (fresh content early), rapid intermediates are skipped, and
-	// the final grid lands right after the gesture ends.
-	it("paces PTY resizes during a layout drag and publishes the final grid on release", () => {
+	// use a latest-value throttle: content updates throughout the drag, rapid
+	// superseded grids are skipped, and pointer release flushes the final grid.
+	it("throttles superseded PTY grids while publishing during drag and on release", () => {
 		const { terminal, muxes } = setup();
 		act(() => muxes[0].emitOpened("handle-1"));
 		const initialResizes = muxes[0].resizes.length;
 
 		document.body.classList.add("is-resizing-x");
 		try {
-			// A drag with pauses long enough for the quiet debounce to fire.
 			terminal.emitResize(110, 30);
-			act(() => void vi.advanceTimersByTime(200));
+			act(() => void vi.advanceTimersByTime(100));
+
+			// These two changes share the next throttle window; only the latest
+			// grid should cross the mux.
+			terminal.emitResize(105, 30);
+			act(() => void vi.advanceTimersByTime(30));
 			terminal.emitResize(100, 30);
-			act(() => void vi.advanceTimersByTime(200));
+			act(() => void vi.advanceTimersByTime(70));
+
+			// A second grid has reached the PTY while the drag is still active.
+			expect(muxes[0].resizes.slice(initialResizes)).toEqual([
+				["handle-1", 110, 30],
+				["handle-1", 100, 30],
+			]);
+
 			terminal.emitResize(90, 30);
-			act(() => void vi.advanceTimersByTime(200));
+			window.dispatchEvent(new PointerEvent("pointerup"));
 		} finally {
 			document.body.classList.remove("is-resizing-x");
 		}
-		act(() => void vi.advanceTimersByTime(300));
 
-		// First settled grid published, middle one paced away, final one landed.
-		const sent = muxes[0].resizes.slice(initialResizes);
-		expect(sent[0]).toEqual(["handle-1", 110, 30]);
-		expect(sent.at(-1)).toEqual(["handle-1", 90, 30]);
-		expect(sent).not.toContainEqual(["handle-1", 100, 30]);
-		expect(sent.length).toBeLessThanOrEqual(2);
+		expect(muxes[0].resizes.slice(initialResizes)).toEqual([
+			["handle-1", 110, 30],
+			["handle-1", 100, 30],
+			["handle-1", 90, 30],
+		]);
+	});
+
+	it("publishes changing PTY grids continuously during a Windows layout drag", () => {
+		vi.spyOn(window.navigator, "platform", "get").mockReturnValue("Win32");
+		const { terminal, muxes } = setup();
+		act(() => muxes[0].emitOpened("handle-1"));
+		const initialResizes = muxes[0].resizes.length;
+
+		document.body.classList.add("is-resizing-x");
+		try {
+			terminal.emitResize(110, 30);
+			act(() => void vi.advanceTimersByTime(100));
+			expect(muxes[0].resizes.slice(initialResizes)).toEqual([["handle-1", 110, 30]]);
+
+			terminal.emitResize(100, 30);
+			act(() => void vi.advanceTimersByTime(100));
+			expect(muxes[0].resizes.slice(initialResizes)).toEqual([
+				["handle-1", 110, 30],
+				["handle-1", 100, 30],
+			]);
+
+			terminal.emitResize(90, 30);
+			act(() => void vi.advanceTimersByTime(100));
+			expect(muxes[0].resizes.slice(initialResizes)).toEqual([
+				["handle-1", 110, 30],
+				["handle-1", 100, 30],
+				["handle-1", 90, 30],
+			]);
+		} finally {
+			document.body.classList.remove("is-resizing-x");
+		}
 	});
 
 	it("forwards every explicit input source after the attachment opens", () => {
